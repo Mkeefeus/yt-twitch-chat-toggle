@@ -60,6 +60,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
             
             showStatus('Settings saved successfully!', 'success');
+            
+            // Refresh the popup state to show updated information
+            setTimeout(() => {
+                loadCurrentState();
+            }, 500);
         } catch (error) {
             console.error('Save error:', error);
             showStatus('Error saving settings', 'error');
@@ -90,6 +95,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                         `Switched to ${response.useTwitchChat ? 'Twitch' : 'YouTube'} chat`, 
                         'success'
                     );
+                    
+                    // Refresh state after toggle to ensure UI is in sync
+                    setTimeout(() => {
+                        loadCurrentState();
+                    }, 300);
                 } else {
                     // Revert toggle if failed
                     chatToggle.checked = !chatToggle.checked;
@@ -128,7 +138,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     async function loadCurrentState() {
         try {
-            // First try to get state from content script (more up-to-date)
+            // Always try to get the most current state from content script first
             const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
             if (tab && tab.url.includes('youtube.com')) {
                 try {
@@ -137,42 +147,52 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
                     
                     if (response) {
+                        // Update all fields with current content script state
                         twitchChannelInput.value = response.twitchChannel || '';
                         chatToggle.checked = response.useTwitchChat || false;
                         
                         // Display current YouTube channel
-                        if (response.currentYouTubeChannel) {
+                        if (response.currentYouTubeChannel && response.currentYouTubeChannel !== 'unknown') {
                             currentChannelDisplay.textContent = `YouTube: ${response.currentYouTubeChannel}`;
                             channelInfo.style.display = 'block';
+                        } else {
+                            channelInfo.style.display = 'none';
                         }
                         
                         // Show settings status
-                        if (response.hasSettings) {
+                        if (response.hasSettings && response.currentYouTubeChannel !== 'unknown') {
                             showStatus(`Settings loaded for ${response.currentYouTubeChannel}`, 'success');
-                        } else {
+                        } else if (response.currentYouTubeChannel && response.currentYouTubeChannel !== 'unknown') {
                             showStatus(`New channel: ${response.currentYouTubeChannel}`, 'info');
+                        } else {
+                            showStatus('Detecting YouTube channel...', 'info');
                         }
                         
+                        console.log('Popup loaded state:', response);
                         return;
                     }
                 } catch (error) {
-                    console.log('Content script not ready, falling back to storage');
+                    console.log('Content script not ready or error getting state:', error);
                 }
             }
             
-            // Fallback to storage (legacy support)
+            // Fallback to storage only if content script is unavailable
             const result = await chrome.storage.sync.get(['channelSettings']);
             if (result.channelSettings) {
-                // Show that we have channel-specific settings available
-                showStatus('Using channel-specific settings', 'info');
+                showStatus('Content script not available, using stored settings', 'info');
+                // Don't populate fields from storage as they might be for wrong channel
+                twitchChannelInput.value = '';
+                chatToggle.checked = false;
             } else {
-                // Legacy fallback
+                // Complete fallback for legacy installations
                 const legacyResult = await chrome.storage.sync.get(['twitchChannel', 'useTwitchChat']);
                 twitchChannelInput.value = legacyResult.twitchChannel || '';
                 chatToggle.checked = legacyResult.useTwitchChat || false;
+                showStatus('Using legacy settings', 'info');
             }
         } catch (error) {
             console.error('Error loading current state:', error);
+            showStatus('Error loading settings', 'error');
         }
     }
     

@@ -40,6 +40,12 @@ class YouTubeTwitchChatReplacer {
     }
 
     async detectAndLoadChannel() {
+        // Only detect channel on video/live stream pages
+        if (!window.location.href.includes("/watch")) {
+            console.log('yt-twitch-chat: Not on a video/live stream page, skipping channel detection');
+            return;
+        }
+
         // Try to detect channel name with retries
         let attempts = 0;
         const maxAttempts = 5;
@@ -116,6 +122,7 @@ class YouTubeTwitchChatReplacer {
     handleMessage(request, sender, sendResponse) {
         switch (request.action) {
             case "getChannelName":
+                console.log('yt-twitch-chat: getChannelName request received');
                 const channelName = this.extractChannelName();
                 sendResponse({ channelName });
                 break;
@@ -178,16 +185,29 @@ class YouTubeTwitchChatReplacer {
     }
 
     extractChannelName() {
+        // Only extract channel names on video/live stream pages
+        if (!window.location.href.includes("/watch")) {
+            return "";
+        }
+
         // Try multiple methods to get channel name
         let channelName = "";
 
-        // Method 1: From URL (for channel pages)
-        const urlMatch = window.location.href.match(/youtube\.com\/@([^\/\?]+)/);
-        if (urlMatch) {
-            channelName = urlMatch[1];
+        // Method 1: From div#owner > a tag with @link (most reliable)
+        const ownerDiv = document.querySelector('#owner');
+        if (ownerDiv) {
+            const ownerLink = ownerDiv.querySelector('a[href*="/@"]');
+            if (ownerLink) {
+                const href = ownerLink.href;
+                const match = href.match(/youtube\.com\/@([^\/\?]+)/);
+                if (match) {
+                    channelName = match[1];
+                    console.log(`yt-twitch-chat: Found channel from #owner div: ${channelName}`);
+                }
+            }
         }
 
-        // Method 2: From video page channel link (most reliable for live streams)
+        // Method 2: From other video page channel links (fallback)
         if (!channelName) {
             const channelSelectors = [
                 '#owner-name a[href*="/@"]',
@@ -210,9 +230,14 @@ class YouTubeTwitchChatReplacer {
             }
         }
 
-        // Method 3: From channel name text elements
+        // Method 3: From channel name text elements (only from video page context)
         if (!channelName) {
             const textSelectors = [
+                '#owner a',
+                '#owner-name a',
+                '.ytd-channel-name a',
+                '.ytd-video-owner-renderer .ytd-channel-name',
+                '#owner a',
                 '#owner-name a',
                 '.ytd-channel-name a',
                 '.ytd-video-owner-renderer .ytd-channel-name',
@@ -229,12 +254,11 @@ class YouTubeTwitchChatReplacer {
             }
         }
 
-        // Method 4: From metadata or other sources
+        // Method 4: From video metadata or other video-specific sources
         if (!channelName) {
             const metaSelectors = [
                 '[itemprop="author"] [itemprop="name"]',
-                '.ytd-video-primary-info-renderer .ytd-channel-name',
-                '.ytd-c4-tabbed-header-renderer .ytd-channel-name'
+                '.ytd-video-primary-info-renderer .ytd-channel-name'
             ];
             
             for (const selector of metaSelectors) {
@@ -560,11 +584,8 @@ class YouTubeTwitchChatReplacer {
         const suggestedChannel = this.extractChannelName();
         
         // Different content for new channel vs settings change
-        const title = isNewChannel ? `New Channel: ${this.currentYouTubeChannel}` : 'Connect Twitch Chat';
-        const description = isNewChannel 
-            ? 'Would you like to associate a Twitch chat with this YouTube channel?'
-            : 'Enter a Twitch channel name to replace YouTube chat';
-
+        const title = 'Connect Twitch Chat';
+        const description = 'Would you like to associate a Twitch chat with this YouTube channel?'
         promptContainer.innerHTML = `
             <div style="text-align: center; max-width: 300px;">
                 <div style="margin-bottom: 16px;">
@@ -589,7 +610,7 @@ class YouTubeTwitchChatReplacer {
                 <div style="display: flex; gap: 8px; width: 100%;">
                     <button id="cancel-twitch-setup" style="flex: 1; padding: 10px; border: 1px solid var(--yt-spec-10-percent-layer);
                             background: transparent; color: var(--yt-spec-text-primary); border-radius: 4px; cursor: pointer; font-size: 13px;">
-                        ${isNewChannel ? 'Keep YouTube Chat' : 'Cancel'}
+                        ${'Keep YouTube Chat'}
                     </button>
                     <button id="confirm-twitch-setup" style="flex: 1; padding: 10px; border: none; background: #9146ff;
                             color: white; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">
