@@ -1,0 +1,301 @@
+body {
+    width: 320px;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    background: #fff;
+    color: #333;
+}
+
+.container {
+    padding: 16px;
+}
+
+.header {
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 12px;
+}
+
+.header h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.channel-info {
+    margin-top: 8px;
+    padding: 4px 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.channel-info small {
+    color: #666;
+    font-size: 11px;
+}
+
+.controls {
+    margin-bottom: 16px;
+}
+
+.input-group {
+    margin-bottom: 16px;
+    position: relative;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+}
+
+.input-group input[type="text"] {
+    width: calc(100% - 44px);
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+    box-sizing: border-box;
+    height: 36px;
+}
+
+.input-group input[type="text"]:focus {
+    outline: none;
+    border-color: #4285f4;
+    box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+}
+
+.auto-fill-btn {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 36px;
+    height: 36px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f8f9fa;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auto-fill-btn:hover {
+    background: #e8f0fe;
+    border-color: #4285f4;
+}
+
+.toggle-group {
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.toggle-label input[type="checkbox"] {
+    display: none;
+}
+
+.slider {
+    width: 44px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 12px;
+    position: relative;
+    transition: background 0.3s;
+    margin-right: 10px;
+}
+
+.slider:before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.toggle-label input:checked + .slider {
+    background: #9146ff;
+}
+
+.toggle-label input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+.status {
+    min-height: 20px;
+    font-size: 12px;
+    margin-bottom: 12px;
+    padding: 8px;
+    border-radius: 4px;
+    display: none;
+}
+
+.status.success {
+    background: #e8f5e8;
+    color: #2d5016;
+    border: 1px solid #c3e6c3;
+    display: block;
+}
+
+.status.error {
+    background: #fef7f0;
+    color: #b3261e;
+    border: 1px solid #f2b8b5;
+    display: block;
+}
+
+.status.info {
+    background: #e8f0fe;
+    color: #1a73e8;
+    border: 1px solid #c8e6fd;
+    display: block;
+}
+
+.button-group {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.save-btn {
+    flex: 1;
+    padding: 10px;
+    background: #4285f4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.save-btn:hover {
+    background: #3367d6;
+}
+
+.save-btn:active {
+    background: #2b5ce6;
+}
+
+.change-channel-btn {
+    flex: 1;
+    padding: 10px;
+    background: #9146ff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.change-channel-btn:hover {
+    background: #7c3aed;
+}
+
+.change-channel-btn:active {
+    background: #6b21d6;
+}
+
+.info {
+    border-top: 1px solid #e0e0e0;
+    padding-top: 12px;
+    text-align: center;
+}
+
+.info p {
+    margin: 0;
+    color: #666;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #202124;
+        color: #e8eaed;
+    }
+    
+    .header {
+        border-bottom-color: #5f6368;
+    }
+    
+    .header h2 {
+        color: #e8eaed;
+    }
+    
+    .channel-info {
+        background: #3c4043;
+    }
+    
+    .channel-info small {
+        color: #9aa0a6;
+    }
+    
+    .input-group label {
+        color: #bdc1c6;
+    }
+    
+    .input-group input[type="text"] {
+        background: #303134;
+        border-color: #5f6368;
+        color: #e8eaed;
+    }
+    
+    .input-group input[type="text"]:focus {
+        border-color: #8ab4f8;
+        box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.2);
+    }
+    
+    .auto-fill-btn {
+        background: #303134;
+        border-color: #5f6368;
+        color: #e8eaed;
+    }
+    
+    .auto-fill-btn:hover {
+        background: #3c4043;
+        border-color: #8ab4f8;
+    }
+    
+    .slider {
+        background: #5f6368;
+    }
+    
+    .change-channel-btn {
+        background: #a855f7;
+    }
+    
+    .change-channel-btn:hover {
+        background: #9333ea;
+    }
+    
+    .info {
+        border-top-color: #5f6368;
+    }
+    
+    .info p {
+        color: #9aa0a6;
+    }
+}

@@ -1,142 +1,171 @@
 # YouTube-Twitch Chat Replacer
 
-A Chrome extension that replaces YouTube live stream chat with Twitch chat while keeping the YouTube stream open.
+A Chrome/Brave browser extension that replaces YouTube live stream chat with Twitch chat while keeping the stream open. Perfect for streamers who simulcast or viewers who prefer Twitch chat features.
 
 ## Features
 
-- 🔄 **Automatic Detection**: Detects YouTube live streams automatically
-- 💬 **Chat Replacement**: Replaces YouTube chat with corresponding Twitch chat
-- 🗺️ **Channel Mapping**: Map YouTube channels to their Twitch counterparts
-- ⚙️ **Easy Configuration**: Simple popup interface for managing channel mappings
-- 🔄 **Switch Back**: Option to switch back to original YouTube chat
-- 📱 **Responsive Design**: Works on desktop and mobile layouts
+- 🔄 **Seamless Chat Switching**: Toggle between YouTube and Twitch chat with one click
+- 🎯 **Auto-Fill Channel Names**: Automatically detect YouTube channel and suggest Twitch channel
+- 🌓 **Dark/Light Mode Support**: Respects your browser's theme preference
+- 📱 **Responsive Design**: Works in both default and theater mode on YouTube
+- ⚡ **SPA Navigation**: Handles YouTube's single-page application navigation
+- 💾 **Settings Persistence**: Remembers your preferences across browser sessions
 
 ## Installation
 
-### From Source (Developer Mode)
+### Method 1: Load as Unpacked Extension (Recommended for Development)
 
 1. Clone or download this repository
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" in the top right
-4. Click "Load unpacked" and select the extension folder
-5. The extension icon should appear in your toolbar
+2. Open Chrome/Brave browser
+3. Navigate to `chrome://extensions/`
+4. Enable "Developer mode" (toggle in top right)
+5. Click "Load unpacked"
+6. Select the folder containing this extension
+7. The extension icon should appear in your browser toolbar
 
-### Creating Icons
+### Method 2: Install from Chrome Web Store
 
-You'll need to create icon files for the extension:
+*Coming soon - extension will be published to the Chrome Web Store*
 
-- `icons/icon16.png` (16x16 pixels)
-- `icons/icon48.png` (48x48 pixels)  
-- `icons/icon128.png` (128x128 pixels)
+## Usage
 
-You can create these using any image editor. The icons should represent the extension's purpose (e.g., YouTube + Twitch logos combined).
+### Initial Setup
 
-## How to Use
+1. Click the extension icon in your browser toolbar
+2. Enter the Twitch channel name you want to display
+3. Use the 🔄 button to auto-fill from the current YouTube channel name
+4. Toggle "Use Twitch Chat" to enable Twitch chat replacement
+5. Click "Save Settings"
 
-1. **Install the extension** following the instructions above
+### While Watching YouTube Live Streams
 
-2. **Visit a YouTube live stream** - the extension will automatically detect it
+1. Navigate to any YouTube live stream
+2. The extension will automatically detect the chat container
+3. Use the toggle button (appears in the top-right of the chat area) to switch between YouTube and Twitch chat
+4. Your preference is automatically saved
 
-3. **First time setup**: 
-   - If no Twitch channel mapping exists, you'll be prompted to enter the corresponding Twitch username
-   - The extension will try to guess the Twitch channel name based on the YouTube channel name
+### Features in Detail
 
-4. **Managing mappings**:
-   - Click the extension icon to open the popup
-   - Add new YouTube ↔ Twitch channel mappings
-   - View and delete existing mappings
+#### Auto-Fill Channel Names
+- The extension can automatically detect the YouTube channel name
+- Click the 🔄 button in the popup to auto-fill the Twitch channel field
+- The extension will attempt to format the name appropriately for Twitch
 
-5. **Using the chat**:
-   - The YouTube chat will be replaced with Twitch chat automatically
-   - Click "Switch Back to YouTube Chat" to return to the original chat
-   - The stream continues playing normally throughout
+#### Dark/Light Mode Support
+- Automatically detects your browser's dark/light mode preference
+- Twitch chat iframe adjusts accordingly
+- Toggle button styling matches YouTube's theme
 
-## File Structure
-
-```
-youtube-twitch-chat/
-├── manifest.json          # Extension manifest
-├── content.js            # Main logic for chat replacement
-├── background.js         # Background service worker
-├── popup.html           # Extension popup interface
-├── popup.js            # Popup functionality
-├── styles.css          # Styling for injected elements
-├── icons/             # Extension icons
-│   ├── icon16.png
-│   ├── icon48.png
-│   └── icon128.png
-└── README.md          # This file
-```
+#### Theater Mode Compatibility
+- Works seamlessly with YouTube's theater mode
+- Chat container maintains proper dimensions
+- Toggle button remains accessible
 
 ## Technical Details
 
-### How It Works
-
-1. **Detection**: The content script monitors YouTube pages for live stream indicators
-2. **Channel Mapping**: Maps YouTube channel names to Twitch usernames
-3. **Chat Replacement**: Injects Twitch chat iframe in place of YouTube chat
-4. **Storage**: Uses Chrome's sync storage to persist channel mappings across devices
-
-### Permissions
-
-- `activeTab`: Access to current YouTube tab
-- `storage`: Store channel mappings
-- `tabs`: Monitor tab changes
-- Host permissions for YouTube and Twitch domains
-
 ### Browser Compatibility
-
-- Chrome (Manifest V3)
-- **Brave Browser** (Chromium-based) - Recommended
-- Edge (Chromium-based)
+- Google Chrome (Manifest V3)
+- Brave Browser
+- Microsoft Edge (Chromium-based)
 - Other Chromium-based browsers
 
-### Brave Browser Notes
+### Permissions Required
+- `activeTab`: To interact with YouTube pages
+- `storage`: To save user preferences
+- `tabs`: To detect navigation and page changes
+- Host permissions for `youtube.com` and `twitch.tv`
 
-- Use `brave://extensions/` instead of `chrome://extensions/`
-- If Twitch chat doesn't load, check Brave Shields settings
-- May need to allow cross-site cookies for Twitch embeds
+### File Structure
+```
+├── manifest.json          # Extension configuration
+├── popup.html             # Extension popup interface
+├── popup.css              # Popup styling
+├── popup.js               # Popup functionality
+├── content.js             # Main content script logic
+├── background.js          # Background service worker
+├── styles.css             # Content script styles
+├── icons/                 # Extension icons
+│   ├── icon16.png
+│   ├── icon48.png
+│   └── icon128.png
+└── README.md             # This file
+```
 
 ## Development
 
-### Building
+### Local Development Setup
 
-No build process required - this is a vanilla JavaScript extension.
+1. Make changes to the extension files
+2. Go to `chrome://extensions/`
+3. Click the refresh icon on the extension card
+4. Test changes on YouTube live streams
 
-### Testing
+### Building for Production
 
-1. Load the extension in developer mode
-2. Visit various YouTube live streams
-3. Test channel mapping functionality
-4. Verify chat replacement works correctly
+The extension is ready for production use as-is. For Chrome Web Store submission:
+
+1. Ensure all icons are properly sized (16x16, 48x48, 128x128)
+2. Test on multiple YouTube live streams
+3. Verify compatibility with different browser themes
+4. Package as ZIP file for submission
+
+## Troubleshooting
 
 ### Common Issues
 
-- **Chat not replacing**: Check if the stream is actually live
-- **Twitch chat not loading**: Verify the Twitch channel name is correct
-- **Extension not working**: Check for JavaScript errors in the console
+**Extension not working on YouTube:**
+- Ensure the extension is enabled in `chrome://extensions/`
+- Check that you're on a YouTube live stream page (`/watch` URL)
+- Try refreshing the page
+
+**Twitch chat not loading:**
+- Verify the Twitch channel name is correct and exists
+- Check that the channel is live or has chat enabled
+- Ensure your browser allows third-party frames
+
+**Toggle button not appearing:**
+- Wait for the YouTube page to fully load
+- Check if you're on a live stream (not a regular video)
+- Try refreshing the page
+
+**Settings not saving:**
+- Check browser's storage permissions
+- Try disabling and re-enabling the extension
+
+### Debug Mode
+
+Open browser developer tools (F12) and check the console for any error messages. The extension logs helpful information for debugging.
+
+## Privacy
+
+This extension:
+- Only accesses YouTube pages when explicitly granted permission
+- Stores settings locally in your browser (not on external servers)
+- Does not collect or transmit personal data
+- Only loads Twitch chat iframes when explicitly enabled
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test thoroughly
+4. Test thoroughly on various YouTube live streams
 5. Submit a pull request
 
 ## License
 
-MIT License - see LICENSE file for details
+This project is open source. Feel free to modify and distribute according to your needs.
 
-## Disclaimer
+## Changelog
 
-This extension is not affiliated with YouTube or Twitch. It's an independent project created for educational and utility purposes.
+### Version 1.0.0
+- Initial release
+- Basic chat replacement functionality
+- Dark/light mode support
+- Theater mode compatibility
+- Settings persistence
+- Auto-fill channel names
 
 ## Support
 
-If you encounter issues:
-
-1. Check the browser console for errors
-2. Verify you're on a live YouTube stream
-3. Check that Twitch channel names are spelled correctly
-4. Try clearing the extension's storage and re-adding mappings
+If you encounter issues or have feature requests, please open an issue on the repository or contact the maintainer.
