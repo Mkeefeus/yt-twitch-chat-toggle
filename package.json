@@ -1,0 +1,25 @@
+{
+  "name": "yt-twitch-chat-toggle",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Toggle between YouTube and Twitch chat on YouTube live streams",
+  "scripts": {
+    "build": "bun run tsc",
+    "watch": "bun run tsc --watch",
+    "clean": "rm -rf dist",
+    "dev": "bun run clean && bun run watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "type-check": "tsc --noEmit",
+    "check": "bun run type-check && bun run lint"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.246",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
+    "eslint": "^9.33.0",
+    "globals": "^16.3.0",
+    "typescript": "^5.2.2"
+  },
+  "private": true
+}

@@ -14,25 +14,24 @@
         </div>
         
         <div class="controls">
+            <div class="toggle-group" id="toggleGroup" style="display: none; margin-bottom: 16px;">
+                <label class="toggle-label">
+                    <input type="checkbox" id="chatToggle">
+                    <span class="slider"></span>
+                    <span class="toggle-text" id="toggleText">Use Twitch Chat</span>
+                </label>
+            </div>
+
             <div class="input-group">
                 <label for="twitchChannel">Twitch Channel:</label>
                 <input type="text" id="twitchChannel" placeholder="Enter Twitch channel name">
                 <button id="autoFillBtn" class="auto-fill-btn" title="Auto-fill from YouTube channel">🔄</button>
             </div>
-            
-            <div class="toggle-group">
-                <label class="toggle-label">
-                    <input type="checkbox" id="chatToggle">
-                    <span class="slider"></span>
-                    <span class="toggle-text">Use Twitch Chat</span>
-                </label>
-            </div>
-            
+
             <div class="button-group">
-                <button id="saveBtn" class="save-btn">Save Settings</button>
-                <button id="changeChannelBtn" class="change-channel-btn">Change Channel</button>
+                <button id="saveBtn" class="save-btn">Save</button>
             </div>
-            
+
             <div class="status" id="status"></div>
         </div>
         
@@ -41,6 +40,6 @@
         </div>
     </div>
     
-    <script src="popup.js"></script>
+    <script src="dist/popup.js"></script>
 </body>
 </html>
