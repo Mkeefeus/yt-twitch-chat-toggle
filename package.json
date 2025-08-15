@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Toggle between YouTube and Twitch chat on YouTube live streams",
+  "license": "MIT",
   "scripts": {
     "build": "bun run tsc",
     "watch": "bun run tsc --watch",

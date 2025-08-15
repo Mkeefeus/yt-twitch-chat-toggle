@@ -10,12 +10,14 @@ interface ExtensionSettings {
   version: number;
   channels: Record<string, ChannelSettings>;
   lastUpdated: number;
+  useSync?: boolean; // New setting for storage preference
 }
 
 interface MessageRequest {
-  action: 'toggleChat' | 'getState' | 'settingsUpdated';
+  action: 'toggleChat' | 'getState' | 'settingsUpdated' | 'setStorageType';
   preferredChat?: 'youtube' | 'twitch';
   twitchChannel?: string;
+  useSync?: boolean;
 }
 
 interface StateResponse extends Record<string, unknown> {
@@ -23,6 +25,7 @@ interface StateResponse extends Record<string, unknown> {
   twitchChannel: string;
   currentYouTubeChannel: string;
   isActive: boolean;
+  useSync?: boolean;
 }
 
 class YouTubeTwitchChatReplacer {
@@ -54,7 +57,7 @@ class YouTubeTwitchChatReplacer {
   private async initializeAfterDOM(): Promise<void> {
     // Clear any existing Twitch chat from previous page loads
     this.clearTwitchChat();
-    
+
     // Give YouTube a moment to load dynamic content
     setTimeout(async () => {
       await this.detectAndLoadChannel();
@@ -72,25 +75,25 @@ class YouTubeTwitchChatReplacer {
     // Try to detect channel name with retries
     let attempts = 0;
     const maxAttempts = 5;
-    
+
     while (attempts < maxAttempts) {
       this.currentYouTubeChannel = this.extractChannelName();
-      
+
       if (this.currentYouTubeChannel) {
         console.log(`yt-twitch-chat: Detected channel: ${this.currentYouTubeChannel}`);
         break;
       }
-      
+
       attempts++;
       console.log(`yt-twitch-chat: Channel detection attempt ${attempts}/${maxAttempts}`);
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    
+
     if (!this.currentYouTubeChannel) {
       console.log('yt-twitch-chat: Could not detect YouTube channel name');
       this.currentYouTubeChannel = 'unknown';
     }
-    
+
     // Load settings for the detected channel
     await this.loadSettings();
   }
@@ -101,14 +104,20 @@ class YouTubeTwitchChatReplacer {
         console.log('yt-twitch-chat: Skipping settings load - invalid channel name:', this.currentYouTubeChannel);
         return;
       }
-      
-      // Load from centralized settings structure
-      const result = await chrome.storage.sync.get(['yt_twitch_settings']);
-      const allSettings: ExtensionSettings = result.yt_twitch_settings || { version: 1, channels: {}, lastUpdated: Date.now() };
-      
+
+      // Load from appropriate storage (local or sync based on user preference)
+      const storage = await this.getStorageApi();
+      const result = await storage.get(['yt_twitch_settings']);
+      const allSettings: ExtensionSettings = result.yt_twitch_settings || {
+        version: 1,
+        channels: {},
+        lastUpdated: Date.now(),
+        useSync: false // Default to local storage
+      };
+
       // Get settings for current channel
       const channelSettings = allSettings.channels[this.currentYouTubeChannel];
-      
+
       if (channelSettings) {
         this.twitchChannel = channelSettings.twitchChannel || '';
         this.useTwitchChat = channelSettings.preferredChat === 'twitch';
@@ -119,7 +128,7 @@ class YouTubeTwitchChatReplacer {
         this.useTwitchChat = false;
         console.log(`yt-twitch-chat: No settings found for ${this.currentYouTubeChannel} - will show prompt`);
       }
-      
+
     } catch (error) {
       console.error('yt-twitch-chat: Error loading settings:', error);
     }
@@ -131,19 +140,21 @@ class YouTubeTwitchChatReplacer {
         console.error('yt-twitch-chat: Cannot save settings - invalid channel name:', this.currentYouTubeChannel);
         return;
       }
-      
+
       // Use provided values or current instance values
       const channelToSave = twitchChannel !== undefined ? twitchChannel : this.twitchChannel;
       const chatPreference = useTwitchChat !== undefined ? useTwitchChat : this.useTwitchChat;
-      
-      // Load existing settings structure
-      const result = await chrome.storage.sync.get(['yt_twitch_settings']);
-      const allSettings: ExtensionSettings = result.yt_twitch_settings || { 
-        version: 1, 
+
+      // Load existing settings structure from appropriate storage
+      const storage = await this.getStorageApi();
+      const result = await storage.get(['yt_twitch_settings']);
+      const allSettings: ExtensionSettings = result.yt_twitch_settings || {
+        version: 1,
         channels: {},
-        lastUpdated: Date.now()
+        lastUpdated: Date.now(),
+        useSync: await this.getStorageType()
       };
-      
+
       // Update settings for this channel
       allSettings.channels[this.currentYouTubeChannel] = {
         twitchChannel: channelToSave,
@@ -151,18 +162,18 @@ class YouTubeTwitchChatReplacer {
         lastUpdated: Date.now(),
         created: allSettings.channels[this.currentYouTubeChannel]?.created || Date.now()
       };
-      
+
       // Update global timestamp
       allSettings.lastUpdated = Date.now();
-      
+
       // Validate settings before saving
       if (!this.validateSettings(allSettings)) {
         throw new Error('Settings validation failed');
       }
-      
-      // Save back to storage
-      await chrome.storage.sync.set({ yt_twitch_settings: allSettings });
-      
+
+      // Save back to appropriate storage
+      await storage.set({ yt_twitch_settings: allSettings });
+
       console.log(`yt-twitch-chat: Saved settings for ${this.currentYouTubeChannel}:`, allSettings.channels[this.currentYouTubeChannel]);
     } catch (error) {
       console.error('yt-twitch-chat: Error saving channel-specific settings:', error);
@@ -171,13 +182,13 @@ class YouTubeTwitchChatReplacer {
 
   private async handleSettingsUpdated(): Promise<void> {
     console.log('yt-twitch-chat: Settings updated from popup, refreshing...');
-    
+
     // Clear any active prompt
     this.clearPrompt();
-    
+
     // Reload settings from storage
     await this.loadSettings();
-    
+
     // Update the chat display based on new settings
     this.updateChatDisplay();
   }
@@ -190,58 +201,149 @@ class YouTubeTwitchChatReplacer {
     }
   }
 
+  private async getStorageType(): Promise<boolean> {
+    // Check both storages for useSync preference, defaulting to false (local storage)
+    try {
+      const localResult = await chrome.storage.local.get(['yt_twitch_settings']);
+      if (localResult.yt_twitch_settings?.useSync !== undefined) {
+        return localResult.yt_twitch_settings.useSync;
+      }
+
+      const syncResult = await chrome.storage.sync.get(['yt_twitch_settings']);
+      return syncResult.yt_twitch_settings?.useSync || false;
+    } catch (error) {
+      console.error('yt-twitch-chat: Error getting storage type:', error);
+      return false; // Default to local storage
+    }
+  }
+
+  private async getStorageApi(): Promise<chrome.storage.StorageArea> {
+    const useSync = await this.getStorageType();
+    return useSync ? chrome.storage.sync : chrome.storage.local;
+  }
+
+  private async setStorageType(useSync: boolean): Promise<void> {
+    try {
+      console.log(`yt-twitch-chat: Switching storage type to ${useSync ? 'sync' : 'local'}`);
+
+      // Get current settings from both storages
+      const [localResult, syncResult] = await Promise.all([
+        chrome.storage.local.get(['yt_twitch_settings']),
+        chrome.storage.sync.get(['yt_twitch_settings'])
+      ]);
+
+      let settingsToUse: ExtensionSettings;
+
+      if (useSync) {
+        // Switching to sync storage
+        if (localResult.yt_twitch_settings && Object.keys(localResult.yt_twitch_settings.channels || {}).length > 0) {
+          // Copy local data to sync
+          console.log('yt-twitch-chat: Copying local settings to sync storage');
+          settingsToUse = localResult.yt_twitch_settings;
+          settingsToUse.useSync = true;
+          settingsToUse.lastUpdated = Date.now();
+
+          await chrome.storage.sync.set({ yt_twitch_settings: settingsToUse });
+          await chrome.storage.local.clear(); // Clear local storage
+        } else {
+          // Just enable sync on existing sync data or create new
+          settingsToUse = syncResult.yt_twitch_settings || { version: 1, channels: {}, lastUpdated: Date.now() };
+          settingsToUse.useSync = true;
+          await chrome.storage.sync.set({ yt_twitch_settings: settingsToUse });
+        }
+      } else {
+        // Switching to local storage
+        if (syncResult.yt_twitch_settings && Object.keys(syncResult.yt_twitch_settings.channels || {}).length > 0) {
+          // Copy sync data to local
+          console.log('yt-twitch-chat: Copying sync settings to local storage');
+          settingsToUse = syncResult.yt_twitch_settings;
+          settingsToUse.useSync = false;
+          settingsToUse.lastUpdated = Date.now();
+
+          await chrome.storage.local.set({ yt_twitch_settings: settingsToUse });
+          await chrome.storage.sync.clear(); // Clear sync storage
+        } else {
+          // Just disable sync on existing local data or create new
+          settingsToUse = localResult.yt_twitch_settings || { version: 1, channels: {}, lastUpdated: Date.now() };
+          settingsToUse.useSync = false;
+          await chrome.storage.local.set({ yt_twitch_settings: settingsToUse });
+        }
+      }
+
+      console.log('yt-twitch-chat: Storage type changed successfully');
+    } catch (error) {
+      console.error('yt-twitch-chat: Error setting storage type:', error);
+    }
+  }
+
   private validateSettings(settings: ExtensionSettings): boolean {
     // Basic validation
     if (!settings || typeof settings !== 'object') {return false;}
     if (!settings.version || !settings.channels) {return false;}
-    
+
     // Validate each channel's settings
     for (const [_channel, data] of Object.entries(settings.channels)) {
       if (!data || typeof data !== 'object') {return false;}
       if (!Object.prototype.hasOwnProperty.call(data, 'twitchChannel') || !Object.prototype.hasOwnProperty.call(data, 'preferredChat')) {return false;}
       if (!['youtube', 'twitch'].includes(data.preferredChat)) {return false;}
     }
-    
+
     return true;
   }
 
   private setupMessageListener(): void {
     // Listen for messages from popup
     chrome.runtime.onMessage.addListener((message: MessageRequest, sender: chrome.runtime.MessageSender, sendResponse: (response?: Record<string, unknown>) => void) => {
-      switch (message.action) {
-      case 'toggleChat':
-        // Update chat preference from popup
-        this.useTwitchChat = message.preferredChat === 'twitch';
-        this.twitchChannel = message.twitchChannel || this.twitchChannel;
-          
-        // Create Twitch chat container if switching to Twitch and don't have one
-        if (this.useTwitchChat && this.twitchChannel && !document.querySelector('#twitch-chat-iframe')) {
-          this.createTwitchChatContainer();
+      // Handle async operations
+      (async () => {
+        switch (message.action) {
+        case 'toggleChat':
+          // Update chat preference from popup
+          this.useTwitchChat = message.preferredChat === 'twitch';
+          this.twitchChannel = message.twitchChannel || this.twitchChannel;
+
+          // Create Twitch chat container if switching to Twitch and don't have one
+          if (this.useTwitchChat && this.twitchChannel && !document.querySelector('#twitch-chat-iframe')) {
+            this.createTwitchChatContainer();
+          }
+
+          // Update the display immediately
+          this.updateChatDisplay();
+
+          // Save the new settings
+          await this.saveChannelSpecificSettings();
+
+          sendResponse({ success: true, useTwitchChat: this.useTwitchChat });
+          break;
+        case 'getState': {
+          const useSync = await this.getStorageType();
+          const response: StateResponse = {
+            useTwitchChat: this.useTwitchChat,
+            twitchChannel: this.twitchChannel,
+            currentYouTubeChannel: this.currentYouTubeChannel,
+            isActive: !!document.querySelector('#twitch-chat-iframe'),
+            useSync: useSync
+          };
+          sendResponse(response);
+          break;
         }
-          
-        // Update the display immediately
-        this.updateChatDisplay();
-          
-        // Save the new settings
-        this.saveChannelSpecificSettings();
-          
-        sendResponse({ success: true, useTwitchChat: this.useTwitchChat });
-        break;
-      case 'getState': {
-        const response: StateResponse = {
-          useTwitchChat: this.useTwitchChat,
-          twitchChannel: this.twitchChannel,
-          currentYouTubeChannel: this.currentYouTubeChannel,
-          isActive: !!document.querySelector('#twitch-chat-iframe')
-        };
-        sendResponse(response);
-        break;
-      }
-      case 'settingsUpdated':
-        this.handleSettingsUpdated();
-        sendResponse({ success: true });
-        break;
-      }
+        case 'settingsUpdated':
+          await this.handleSettingsUpdated();
+          sendResponse({ success: true });
+          break;
+        case 'setStorageType':
+          if (message.useSync !== undefined) {
+            await this.setStorageType(message.useSync);
+            await this.loadSettings(); // Reload settings from new storage location
+            sendResponse({ success: true });
+          } else {
+            sendResponse({ success: false, error: 'useSync parameter required' });
+          }
+          break;
+        }
+      })();
+
+      return true; // Keep the message channel open for async response
     });
   }
 
@@ -284,13 +386,13 @@ class YouTubeTwitchChatReplacer {
     // Remove any existing Twitch chat iframe
     const existingTwitchIframe = document.querySelector('#twitch-chat-iframe');
     existingTwitchIframe?.remove();
-    
+
     // Show YouTube chat if it was hidden
     const youtubeIframe = document.querySelector('#chatframe') as HTMLElement;
     if (youtubeIframe) {
       youtubeIframe.style.display = 'block';
     }
-    
+
     // Reset the original chat container display
     if (this.originalChatContainer) {
       (this.originalChatContainer as HTMLElement).style.display = 'block';
@@ -332,16 +434,16 @@ class YouTubeTwitchChatReplacer {
   private async onChannelChange(): Promise<void> {
     // Give YouTube time to update the page content
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     const newChannel = this.extractChannelName();
-    
+
     if (newChannel && newChannel !== this.currentYouTubeChannel && newChannel !== 'unknown') {
       console.log(`yt-twitch-chat: Channel changed from ${this.currentYouTubeChannel} to ${newChannel}`);
       this.currentYouTubeChannel = newChannel;
-      
+
       // Load settings for new channel
       await this.loadSettings();
-      
+
       // Check if this channel has saved settings
       if (this.twitchChannel) {
         // Channel has saved settings, apply them
@@ -424,7 +526,7 @@ class YouTubeTwitchChatReplacer {
 
     // Auto-detect channel name
     const suggestedChannel = this.extractChannelName();
-    
+
     // Different content for new channel vs settings change
     const title = 'Connect Twitch Chat';
     const description = 'Would you like to associate a Twitch chat with this YouTube channel?';
@@ -440,15 +542,15 @@ class YouTubeTwitchChatReplacer {
             ${description}
           </p>
         </div>
-        
+
         <div style="width: 100%; margin-bottom: 16px;">
-          <input type="text" id="twitch-channel-input" placeholder="Enter Twitch channel name" 
+          <input type="text" id="twitch-channel-input" placeholder="Enter Twitch channel name"
                  value="${suggestedChannel.toLowerCase().replace(/\s+/g, '')}"
-                 style="width: 100%; padding: 10px; border: 1px solid var(--yt-spec-10-percent-layer); 
+                 style="width: 100%; padding: 10px; border: 1px solid var(--yt-spec-10-percent-layer);
                         border-radius: 4px; font-size: 14px; background: var(--yt-spec-base-background);
                         color: var(--yt-spec-text-primary); box-sizing: border-box;">
         </div>
-        
+
         <div style="display: flex; gap: 8px; width: 100%;">
           <button id="cancel-twitch-setup" style="flex: 1; padding: 10px; border: 1px solid var(--yt-spec-10-percent-layer);
                   background: transparent; color: var(--yt-spec-text-primary); border-radius: 4px; cursor: pointer; font-size: 13px;">
@@ -459,7 +561,7 @@ class YouTubeTwitchChatReplacer {
             Connect Twitch
           </button>
         </div>
-        
+
         ${suggestedChannel
     ? `<p style="margin: 12px 0 0 0; color: var(--yt-spec-text-secondary); font-size: 11px;">
               Auto-detected from: ${suggestedChannel}
@@ -496,7 +598,7 @@ class YouTubeTwitchChatReplacer {
     cancelBtn.addEventListener('click', () => {
       promptContainer.remove();
       (this.originalChatContainer as HTMLElement).style.display = 'block';
-      
+
       // For new channels, save the preference to use YouTube chat
       if (isNewChannel) {
         this.useTwitchChat = false;
@@ -514,9 +616,9 @@ class YouTubeTwitchChatReplacer {
           console.log(`yt-twitch-chat: Updating YouTube channel from ${this.currentYouTubeChannel} to ${detectedChannel}`);
           this.currentYouTubeChannel = detectedChannel;
         }
-        
+
         console.log(`yt-twitch-chat: Setting up association: ${this.currentYouTubeChannel} -> ${channelName}`);
-        
+
         this.twitchChannel = channelName;
         this.useTwitchChat = true;
 
@@ -562,7 +664,7 @@ class YouTubeTwitchChatReplacer {
 
       const checkForChat = () => {
         const chatContainer = document.querySelector('ytd-live-chat-frame#chat');
-        
+
         if (chatContainer) {
           this.originalChatContainer = chatContainer;
           console.log('yt-twitch-chat: Found chat container');
@@ -602,13 +704,13 @@ class YouTubeTwitchChatReplacer {
     const youtubeIframe = document.querySelector('#chatframe') as HTMLIFrameElement;
     const twitchIframe = document.createElement('iframe');
     twitchIframe.id = 'twitch-chat-iframe';
-    
+
     if (youtubeIframe) {
       twitchIframe.style.cssText = youtubeIframe.style.cssText;
       // Convert DOMTokenList to array for spreading
       twitchIframe.classList.add(...Array.from(youtubeIframe.classList));
     }
-    
+
     const isDarkMode = this.detectDarkMode();
     twitchIframe.src = `https://www.twitch.tv/embed/${this.twitchChannel}/chat?parent=${window.location.hostname}${
       isDarkMode ? '&darkpopout' : ''

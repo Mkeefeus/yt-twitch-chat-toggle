@@ -1,45 +1,55 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="popup.css">
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>YouTube-Twitch Chat</h2>
-            <div class="channel-info" id="channelInfo" style="display: none;">
-                <small id="currentChannel"></small>
-            </div>
-        </div>
-        
-        <div class="controls">
-            <div class="toggle-group" id="toggleGroup" style="display: none; margin-bottom: 16px;">
-                <label class="toggle-label">
-                    <input type="checkbox" id="chatToggle">
-                    <span class="slider"></span>
-                    <span class="toggle-text" id="toggleText">Use Twitch Chat</span>
-                </label>
+    <head>
+        <meta charset="utf-8" />
+        <link rel="stylesheet" href="popup.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h2>YouTube-Twitch Chat</h2>
+                <div class="channel-info" id="channelInfo" style="display: none">
+                    <small id="currentChannel"></small>
+                </div>
             </div>
 
-            <div class="input-group">
-                <label for="twitchChannel">Twitch Channel:</label>
-                <input type="text" id="twitchChannel" placeholder="Enter Twitch channel name">
-                <button id="autoFillBtn" class="auto-fill-btn" title="Auto-fill from YouTube channel">🔄</button>
+            <div class="controls">
+                <div class="toggle-group" id="toggleGroup" style="display: none; margin-bottom: 16px">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="chatToggle" />
+                        <span class="slider"></span>
+                        <span class="toggle-text" id="toggleText">Use Twitch Chat</span>
+                    </label>
+                </div>
+
+                <div class="input-group">
+                    <label for="twitchChannel">Twitch Channel:</label>
+                    <input type="text" id="twitchChannel" placeholder="Enter Twitch channel name" />
+                    <button id="autoFillBtn" class="auto-fill-btn" title="Auto-fill from YouTube channel">🔄</button>
+                </div>
+
+                <div class="button-group">
+                    <button id="saveBtn" class="save-btn">Save</button>
+                </div>
+
+                <div class="storage-settings">
+                    <div class="toggle-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="syncToggle" />
+                            <span class="slider"></span>
+                            <span class="toggle-text">Sync across devices</span>
+                        </label>
+                        <small> Enable to sync your settings across all Chrome browsers where you're signed in </small>
+                    </div>
+                </div>
+                <div class="status" id="status"></div>
             </div>
 
-            <div class="button-group">
-                <button id="saveBtn" class="save-btn">Save</button>
+            <div class="info">
+                <p><small>💡 Toggle between YouTube and Twitch chat while watching live streams</small></p>
             </div>
+        </div>
 
-            <div class="status" id="status"></div>
-        </div>
-        
-        <div class="info">
-            <p><small>💡 Toggle between YouTube and Twitch chat while watching live streams</small></p>
-        </div>
-    </div>
-    
-    <script src="dist/popup.js"></script>
-</body>
+        <script src="dist/popup.js"></script>
+    </body>
 </html>

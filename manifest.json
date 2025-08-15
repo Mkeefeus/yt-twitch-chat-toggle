@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "YouTube-Twitch Chat Replacer",
-  "version": "1.0",
-  "description": "Replace YouTube live stream chat with Twitch chat while keeping the stream open",
+  "name": "Twitch Chat for YouTube",
+  "version": "1.0.0",
+  "description": "Seamlessly switch between YouTube and Twitch chat while watching YouTube live streams. Per-channel settings with one-click toggling.",
   "permissions": [
     "activeTab",
     "storage",
@@ -15,9 +15,15 @@
   ],
   "content_scripts": [
     {
-      "matches": ["*://www.youtube.com/*"],
-      "js": ["dist/content.js"],
-      "css": ["styles.css"],
+      "matches": [
+        "*://www.youtube.com/*"
+      ],
+      "js": [
+        "dist/content.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
       "run_at": "document_end"
     }
   ],
@@ -26,7 +32,7 @@
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "YouTube-Twitch Chat Replacer"
+    "default_title": "Twitch Chat for YouTube"
   },
   "icons": {
     "16": "icons/icon16.png",
