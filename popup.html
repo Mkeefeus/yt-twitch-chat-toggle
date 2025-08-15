@@ -7,7 +7,7 @@
     <body>
         <div class="container">
             <div class="header">
-                <h2>YouTube-Twitch Chat</h2>
+                <h2>Twitch Chat for YouTube</h2>
                 <div class="channel-info" id="channelInfo" style="display: none">
                     <small id="currentChannel"></small>
                 </div>
@@ -40,6 +40,15 @@
                             <span class="toggle-text">Sync across devices</span>
                         </label>
                         <small> Enable to sync your settings across all Chrome browsers where you're signed in </small>
+                    </div>
+
+                    <div class="toggle-group">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="preloadToggle" />
+                            <span class="slider"></span>
+                            <span class="toggle-text">Preload both chats</span>
+                        </label>
+                        <small> Keep both YouTube and Twitch chats loaded for instant switching (uses more resources) </small>
                     </div>
                 </div>
                 <div class="status" id="status"></div>

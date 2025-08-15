@@ -1,7 +1,5 @@
 /* YouTube-Twitch Chat Replacer Styles */
 
-/* YouTube-Twitch Chat Replacer Styles */
-
 /* Twitch iframe styling */
 #twitch-chat-iframe {
     background: transparent !important;
@@ -14,7 +12,12 @@
     left: 0 !important;
     width: 100% !important;
     height: 100% !important;
-    z-index: 1000 !important;
+    transition: opacity 0.3s ease-in-out !important;
+}
+
+/* YouTube chat iframe transitions */
+#chatframe {
+    transition: opacity 0.3s ease-in-out !important;
 }
 
 /* Channel Prompt Styles */
@@ -51,86 +54,6 @@
 
 #cancel-twitch-setup:hover {
     background: var(--yt-spec-10-percent-layer) !important;
-}
-
-/* Channel Prompt Styles */
-#twitch-channel-prompt {
-    font-family: "Roboto", "Arial", sans-serif !important;
-}
-
-#twitch-channel-prompt input[type="text"] {
-    font-family: inherit !important;
-}
-
-#twitch-channel-prompt input[type="text"]:focus {
-    outline: none !important;
-    border-color: #9146ff !important;
-    box-shadow: 0 0 0 2px rgba(145, 70, 255, 0.2) !important;
-}
-
-#twitch-channel-prompt button {
-    font-family: inherit !important;
-    transition: all 0.2s ease !important;
-}
-
-#twitch-channel-prompt button:hover {
-    transform: translateY(-1px) !important;
-}
-
-#twitch-channel-prompt button:active {
-    transform: translateY(0) !important;
-}
-
-#confirm-twitch-setup:hover {
-    background: #7c3aed !important;
-}
-
-#cancel-twitch-setup:hover {
-    background: var(--yt-spec-10-percent-layer) !important;
-}
-
-/* Chat Controls */
-#chat-controls {
-    font-family: "Roboto", "Arial", sans-serif !important;
-    background: rgba(0, 0, 0, 0.7) !important;
-    backdrop-filter: blur(4px) !important;
-    border-radius: 8px !important;
-}
-
-#chat-toggle-btn {
-    font-family: inherit !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.025em !important;
-    border-radius: 6px !important;
-}
-
-#chat-toggle-btn:hover {
-    transform: scale(1.05) !important;
-}
-
-#chat-toggle-btn:active {
-    transform: scale(0.95) !important;
-}
-
-#chat-toggle-btn svg {
-    flex-shrink: 0;
-}
-
-#chat-settings-btn {
-    border-radius: 6px !important;
-}
-
-#chat-settings-btn:hover {
-    transform: scale(1.05) !important;
-}
-
-#chat-settings-btn:active {
-    transform: scale(0.95) !important;
-}
-
-/* Ensure proper positioning in theater mode */
-.theater #chat-container {
-    height: 100% !important;
 }
 
 /* Dark mode adjustments for Twitch chat */
@@ -145,100 +68,36 @@ html[dark] #twitch-channel-prompt,
 .dark #twitch-channel-prompt {
     background: var(--yt-spec-base-background) !important;
     color: var(--yt-spec-text-primary) !important;
-    border: 1px solid var(--yt-spec-10-percent-layer, rgba(255,255,255,0.1)) !important;
-}
-
-[dark] #chat-controls,
-html[dark] #chat-controls,
-.dark #chat-controls {
-    background: rgba(0, 0, 0, 0.8) !important;
-}
-
-/* Light mode adjustments for Twitch chat */
-html:not([dark]) #twitch-chat-container,
-html:not(.dark) #twitch-chat-container {
-    background: #f7f7f8 !important;
+    border: 1px solid var(--yt-spec-10-percent-layer, rgba(255, 255, 255, 0.1)) !important;
 }
 
 /* Responsive adjustments */
 @media (max-width: 1024px) {
-    #chat-controls {
-        gap: 4px !important;
-        padding: 3px !important;
-    }
-    
-    #chat-toggle-btn {
-        padding: 4px 6px !important;
-        font-size: 11px !important;
-    }
-    
-    #chat-toggle-btn svg {
-        width: 14px !important;
-        height: 14px !important;
-    }
-    
-    #chat-settings-btn {
-        padding: 4px !important;
-        width: 24px !important;
-        height: 24px !important;
-    }
-    
-    #chat-settings-btn svg {
-        width: 14px !important;
-        height: 14px !important;
-    }
-    
     #twitch-channel-prompt {
         padding: 16px !important;
     }
-    
+
     #twitch-channel-prompt h3 {
         font-size: 14px !important;
     }
-    
+
     #twitch-channel-prompt p {
         font-size: 12px !important;
     }
-    
+
     #twitch-channel-prompt input[type="text"] {
         font-size: 13px !important;
     }
-    
+
     #twitch-channel-prompt button {
         font-size: 12px !important;
         padding: 8px !important;
     }
 }
 
-/* Animation for chat switching */
-#twitch-chat-container {
-    transition: opacity 0.3s ease-in-out !important;
-}
-
-#twitch-chat-container iframe {
-    transition: opacity 0.2s ease !important;
-}
-
-/* Ensure chat containers maintain proper dimensions */
-#twitch-chat-container {
-    box-sizing: border-box !important;
-}
-
-/* Fix for YouTube's flex layout */
-ytd-live-chat-frame[hidden] + #twitch-chat-container {
-    display: block !important;
-    flex: 1 !important;
-}
-
-/* Ensure Twitch chat respects YouTube's chat container styling */
-#twitch-chat-container {
-    border: var(--ytd-live-chat-border, none) !important;
-    border-radius: var(--ytd-live-chat-border-radius, 0) !important;
-}
-
-/* Handle different YouTube layouts */
-.ytd-watch-flexy[theater] #chat-container {
-    max-height: calc(100vh - 56px) !important;
+/* Smooth focus transitions */
+#twitch-channel-input:focus {
+    transition: all 0.2s ease !important;
 }
 
 /* Fullscreen mode adjustments */
@@ -247,36 +106,20 @@ ytd-live-chat-frame[hidden] + #twitch-chat-container {
 }
 
 /* Ensure proper stacking order */
-#chat-controls {
-    z-index: 1001 !important;
-}
-
 #twitch-channel-prompt {
     z-index: 1000 !important;
 }
 
 /* Fix for mobile view */
 @media (max-width: 768px) {
-    #chat-controls {
-        bottom: 6px !important;
-        right: 6px !important;
-        gap: 3px !important;
-        padding: 2px !important;
-    }
-    
     #twitch-channel-prompt {
         padding: 12px !important;
         border-radius: 8px !important;
     }
-    
+
     #twitch-channel-prompt div {
         max-width: 250px !important;
     }
-}
-
-/* Smooth focus transitions */
-#twitch-channel-input:focus {
-    transition: all 0.2s ease !important;
 }
 
 /* Button hover effects */
@@ -286,7 +129,7 @@ ytd-live-chat-frame[hidden] + #twitch-chat-container {
 }
 
 #twitch-channel-prompt button::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 50%;
     left: 50%;

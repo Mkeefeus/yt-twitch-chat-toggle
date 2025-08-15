@@ -3,6 +3,7 @@ interface ExtensionSettings {
   channels: Record<string, ChannelSettings>;
   lastUpdated: number;
   useSync?: boolean;
+  preloadBothChats?: boolean; // Default: true for smooth switching
 }
 
 interface ChannelSettings {
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   const autoFillBtn = document.getElementById('autoFillBtn') as HTMLButtonElement;
   const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
   const syncToggle = document.getElementById('syncToggle') as HTMLInputElement;
+  const preloadToggle = document.getElementById('preloadToggle') as HTMLInputElement;
   const status = document.getElementById('status') as HTMLDivElement;
   const toggleGroup = document.getElementById('toggleGroup') as HTMLDivElement;
   const toggleText = document.getElementById('toggleText') as HTMLSpanElement;
@@ -71,7 +73,8 @@ document.addEventListener('DOMContentLoaded', async function() {
       version: 1,
       channels: {},
       lastUpdated: Date.now(),
-      useSync: useSync
+      useSync: useSync,
+      preloadBothChats: true // Default to true for smooth switching
     };
 
     allSettings.channels[youtubeChannel] = {
@@ -82,6 +85,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     };
     allSettings.lastUpdated = Date.now();
     allSettings.useSync = useSync;
+    // Preserve preload setting if it exists, otherwise default to true
+    if (allSettings.preloadBothChats === undefined) {
+      allSettings.preloadBothChats = true;
+    }
 
     await storage.set({ yt_twitch_settings: allSettings });
     showStatus('Settings saved!', 'success');
@@ -172,6 +179,39 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   });
 
+  // Preload toggle functionality
+  preloadToggle.addEventListener('change', async function() {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.url?.includes('youtube.com')) {
+        const response = await chrome.tabs.sendMessage(tab.id!, {
+          action: 'setPreloadSetting',
+          preloadBothChats: preloadToggle.checked
+        });
+
+        if (response?.success) {
+          showStatus(
+            preloadToggle.checked
+              ? 'Both chats will now be preloaded for instant switching'
+              : 'Only active chat will be loaded to save resources',
+            'success'
+          );
+          // Reload the current state to reflect any changes
+          await loadCurrentState();
+        } else {
+          showStatus('Failed to change preload setting', 'error');
+          // Revert the toggle state
+          preloadToggle.checked = !preloadToggle.checked;
+        }
+      }
+    } catch (error) {
+      console.error('Error changing preload setting:', error);
+      showStatus('Failed to change preload setting', 'error');
+      // Revert the toggle state
+      preloadToggle.checked = !preloadToggle.checked;
+    }
+  });
+
   async function loadCurrentState(): Promise<void> {
     const youtubeChannel = await getCurrentYouTubeChannel();
     let settings: ChannelSettings | undefined;
@@ -199,9 +239,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
-        useSync: useSync
+        useSync: useSync,
+        preloadBothChats: true // Default to true for smooth switching
       };
       settings = allSettings.channels[youtubeChannel];
+
+      // Update preload toggle state (default to true if not set)
+      preloadToggle.checked = allSettings.preloadBothChats !== false;
     }
 
     // Update sync toggle state
