@@ -38,6 +38,8 @@ class YouTubeTwitchChatReplacer {
   private originalYouTubeChatSrc: string = '';
   private originalYouTubeIframeHTML: string = '';
   private observer: MutationObserver | null = null;
+  private youtubeIframe: HTMLIFrameElement | null = null;
+  private twitchIframe: HTMLIFrameElement | null = null;
 
   constructor() {
     this.init();
@@ -60,10 +62,11 @@ class YouTubeTwitchChatReplacer {
 
   private async initializeAfterDOM(): Promise<void> {
     // Only clear Twitch chat if it actually exists from previous page loads
-    const existingTwitchIframe = document.querySelector('#twitch-chat-iframe');
+    const existingTwitchIframe = document.querySelector('#twitch-chat-iframe') as HTMLIFrameElement;
     if (existingTwitchIframe) {
       console.log('yt-twitch-chat: Removing existing Twitch chat from previous page load');
       existingTwitchIframe.remove();
+      this.twitchIframe = null; // Clear the reference
     }
 
     // Give YouTube a moment to load dynamic content
@@ -98,7 +101,7 @@ class YouTubeTwitchChatReplacer {
     }
 
     if (!this.currentYouTubeChannel) {
-      console.log('yt-twitch-chat: Could not detect YouTube channel name');
+      console.error('yt-twitch-chat: Could not detect YouTube channel name');
       this.currentYouTubeChannel = 'unknown';
     }
 
@@ -142,16 +145,12 @@ class YouTubeTwitchChatReplacer {
     }
   }
 
-  private async saveChannelSpecificSettings(twitchChannel?: string, useTwitchChat?: boolean): Promise<void> {
+  private async saveChannelSpecificSettings(): Promise<void> {
     try {
       if (!this.currentYouTubeChannel || this.currentYouTubeChannel === 'unknown') {
         console.error('yt-twitch-chat: Cannot save settings - invalid channel name:', this.currentYouTubeChannel);
         return;
       }
-
-      // Use provided values or current instance values
-      const channelToSave = twitchChannel !== undefined ? twitchChannel : this.twitchChannel;
-      const chatPreference = useTwitchChat !== undefined ? useTwitchChat : this.useTwitchChat;
 
       // Load existing settings structure from appropriate storage
       const storage = await this.getStorageApi();
@@ -160,13 +159,13 @@ class YouTubeTwitchChatReplacer {
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
-        useSync: await this.getStorageType()
+        useSync: await this.isSyncStorageEnabled()
       };
 
-      // Update settings for this channel
+      // Update settings for this channel using current instance values
       allSettings.channels[this.currentYouTubeChannel] = {
-        twitchChannel: channelToSave,
-        preferredChat: chatPreference ? 'twitch' : 'youtube',
+        twitchChannel: this.twitchChannel,
+        preferredChat: this.useTwitchChat ? 'twitch' : 'youtube',
         lastUpdated: Date.now(),
         created: allSettings.channels[this.currentYouTubeChannel]?.created || Date.now()
       };
@@ -209,7 +208,7 @@ class YouTubeTwitchChatReplacer {
     }
   }
 
-  private async getStorageType(): Promise<boolean> {
+  private async isSyncStorageEnabled(): Promise<boolean> {
     // Check both storages for useSync preference, defaulting to false (local storage)
     try {
       const localResult = await chrome.storage.local.get(['yt_twitch_settings']);
@@ -226,7 +225,7 @@ class YouTubeTwitchChatReplacer {
   }
 
   private async getStorageApi(): Promise<chrome.storage.StorageArea> {
-    const useSync = await this.getStorageType();
+    const useSync = await this.isSyncStorageEnabled();
     return useSync ? chrome.storage.sync : chrome.storage.local;
   }
 
@@ -306,7 +305,7 @@ class YouTubeTwitchChatReplacer {
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
-        useSync: await this.getStorageType()
+        useSync: await this.isSyncStorageEnabled()
       };
 
       settings.preloadBothChats = preloadBothChats;
@@ -316,17 +315,17 @@ class YouTubeTwitchChatReplacer {
 
       // If switching to single-chat mode and currently have both loaded, clean up
       if (!preloadBothChats && this.twitchChannel) {
-        const twitchIframe = document.querySelector('#twitch-chat-iframe');
-        if (twitchIframe && !this.useTwitchChat) {
+        if (this.twitchIframe && !this.useTwitchChat) {
           // If we're showing YouTube chat, remove the Twitch iframe to save resources
-          twitchIframe.remove();
-        } else if (!twitchIframe && this.useTwitchChat) {
+          this.twitchIframe.remove();
+          this.twitchIframe = null;
+        } else if (!this.twitchIframe && this.useTwitchChat) {
           // If we're showing Twitch chat but it's not loaded, create it
           this.createTwitchChatContainer();
         }
       }
       // If switching to preload mode, ensure both chats are loaded
-      else if (preloadBothChats && this.twitchChannel && !document.querySelector('#twitch-chat-iframe')) {
+      else if (preloadBothChats && this.twitchChannel && !this.twitchIframe) {
         this.createTwitchChatContainer();
       }
 
@@ -363,7 +362,7 @@ class YouTubeTwitchChatReplacer {
           this.twitchChannel = message.twitchChannel || this.twitchChannel;
 
           // Create Twitch chat container if switching to Twitch and don't have one
-          if (this.useTwitchChat && this.twitchChannel && !document.querySelector('#twitch-chat-iframe')) {
+          if (this.useTwitchChat && this.twitchChannel && !this.twitchIframe) {
             this.createTwitchChatContainer();
           }
 
@@ -376,12 +375,12 @@ class YouTubeTwitchChatReplacer {
           sendResponse({ success: true, useTwitchChat: this.useTwitchChat });
           break;
         case 'getState': {
-          const useSync = await this.getStorageType();
+          const useSync = await this.isSyncStorageEnabled();
           const response: StateResponse = {
             useTwitchChat: this.useTwitchChat,
             twitchChannel: this.twitchChannel,
             currentYouTubeChannel: this.currentYouTubeChannel,
-            isActive: !!document.querySelector('#twitch-chat-iframe'),
+            isActive: !!this.twitchIframe,
             useSync: useSync
           };
           sendResponse(response);
@@ -448,48 +447,6 @@ class YouTubeTwitchChatReplacer {
     }
 
     return channelName;
-  }
-
-  private clearTwitchChat(): void {
-    // Remove any existing Twitch chat iframe
-    const existingTwitchIframe = document.querySelector('#twitch-chat-iframe');
-    existingTwitchIframe?.remove();
-
-    // Only restore/modify YouTube iframe if we have original data or if it's actually missing/broken
-    let youtubeIframe = document.querySelector('#chatframe') as HTMLElement;
-
-    if (!youtubeIframe && this.originalYouTubeIframeHTML) {
-      // YouTube iframe was completely removed, restore it from stored HTML
-      console.log('yt-twitch-chat: YouTube iframe missing, restoring from stored HTML in clearTwitchChat');
-      this.restoreYouTubeIframe();
-      youtubeIframe = document.querySelector('#chatframe') as HTMLElement;
-    }
-
-    if (youtubeIframe) {
-      // Only modify YouTube iframe if we have captured data or if it's in a broken state
-      const youtubeFrame = youtubeIframe as HTMLIFrameElement;
-      const needsRestoration = this.originalYouTubeChatSrc &&
-        (!youtubeFrame.src || youtubeFrame.src.includes('about:blank'));
-
-      if (needsRestoration) {
-        console.log('yt-twitch-chat: Restoring YouTube chat src from captured URL in clearTwitchChat');
-        youtubeFrame.src = this.originalYouTubeChatSrc;
-      }
-
-      // Always ensure proper display properties for YouTube iframe
-      youtubeIframe.style.display = 'block';
-      youtubeIframe.style.opacity = '1';
-      youtubeIframe.style.pointerEvents = 'auto';
-      youtubeIframe.style.zIndex = '1000';
-      youtubeIframe.tabIndex = 0;
-      youtubeIframe.removeAttribute('inert');
-      youtubeIframe.setAttribute('aria-hidden', 'false');
-    }
-
-    // Reset the original chat container display
-    if (this.originalChatContainer) {
-      (this.originalChatContainer as HTMLElement).style.display = 'block';
-    }
   }
 
   private setupNavigationListener(): void {
@@ -560,13 +517,27 @@ class YouTubeTwitchChatReplacer {
 
     // Show prompt after a short delay to let YouTube finish loading
     console.log('yt-twitch-chat: Scheduling prompt to show in 2 seconds');
-    setTimeout(() => {
+    setTimeout(async () => {
       console.log('yt-twitch-chat: About to show channel prompt');
-      this.showChannelPrompt(true); // true = new channel prompt
+      await this.showChannelPrompt(true); // true = new channel prompt
     }, 2000);
   }
 
-  private showChannelPrompt(isNewChannel: boolean = false): void {
+  private async loadTemplate(templatePath: string): Promise<string> {
+    try {
+      const url = chrome.runtime.getURL(templatePath);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to load template: ${response.status}`);
+      }
+      return await response.text();
+    } catch (error) {
+      console.error('yt-twitch-chat: Error loading template:', error);
+      throw error;
+    }
+  }
+
+  private async showChannelPrompt(isNewChannel: boolean = false): Promise<void> {
     console.log('yt-twitch-chat: showChannelPrompt called. originalChatContainer:', !!this.originalChatContainer);
     if (!this.originalChatContainer) {
       console.log('yt-twitch-chat: No originalChatContainer, cannot show prompt');
@@ -620,49 +591,71 @@ class YouTubeTwitchChatReplacer {
     // Auto-detect channel name
     const suggestedChannel = this.extractChannelName();
 
-    // Different content for new channel vs settings change
-    const title = 'Connect Twitch Chat';
-    const description = 'Would you like to associate a Twitch chat with this YouTube channel?';
-    promptContainer.innerHTML = `
-      <div style="text-align: center; max-width: 300px;">
-        <div style="margin-bottom: 16px;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="color: #9146ff; margin-bottom: 12px;">
-            <path d="M2.149 0L.537 4.119v15.581h5.4V24l4.119-4.3h3.23L21.463 12V0H2.149zM19.541 11.16l-2.42 2.42H13.9l-2.148 2.148v-2.148H7.582V1.922h11.959V11.16z"/>
-            <path d="M15.789 5.559h-1.93v5.4h1.93V5.559zM11.67 5.559H9.74v5.4h1.93V5.559z"/>
-          </svg>
-          <h3 style="margin: 0 0 8px 0; color: var(--yt-spec-text-primary); font-size: 16px; font-weight: 500;">${title}</h3>
-          <p style="margin: 0 0 16px 0; color: var(--yt-spec-text-secondary); font-size: 13px; line-height: 1.4;">
-            ${description}
-          </p>
-        </div>
+    // Load and populate the template
+    try {
+      const template = await this.loadTemplate('templates/channel-prompt.html');
+      promptContainer.innerHTML = template;
 
-        <div style="width: 100%; margin-bottom: 16px;">
-          <input type="text" id="twitch-channel-input" placeholder="Enter Twitch channel name"
-                 value="${suggestedChannel.toLowerCase().replace(/\s+/g, '')}"
-                 style="width: 100%; padding: 10px; border: 1px solid var(--yt-spec-10-percent-layer);
-                        border-radius: 4px; font-size: 14px; background: var(--yt-spec-base-background);
-                        color: var(--yt-spec-text-primary); box-sizing: border-box;">
-        </div>
+      // Update template variables
+      const titleElement = promptContainer.querySelector('[data-title]') as HTMLElement;
+      const descriptionElement = promptContainer.querySelector('[data-description]') as HTMLElement;
+      const channelInput = promptContainer.querySelector('#twitch-channel-input') as HTMLInputElement;
+      const autoDetectedElement = promptContainer.querySelector('[data-auto-detected]') as HTMLElement;
+      const detectedChannelSpan = promptContainer.querySelector('[data-detected-channel]') as HTMLElement;
 
-        <div style="display: flex; gap: 8px; width: 100%;">
-          <button id="cancel-twitch-setup" style="flex: 1; padding: 10px; border: 1px solid var(--yt-spec-10-percent-layer);
-                  background: transparent; color: var(--yt-spec-text-primary); border-radius: 4px; cursor: pointer; font-size: 13px;">
-            Keep YouTube Chat
-          </button>
-          <button id="confirm-twitch-setup" style="flex: 1; padding: 10px; border: none; background: #9146ff;
-                  color: white; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">
-            Connect Twitch
-          </button>
-        </div>
+      if (titleElement) {
+        titleElement.textContent = 'Connect Twitch Chat';
+      }
+      if (descriptionElement) {
+        descriptionElement.textContent = 'Would you like to associate a Twitch chat with this YouTube channel?';
+      }
 
-        ${suggestedChannel
-    ? `<p style="margin: 12px 0 0 0; color: var(--yt-spec-text-secondary); font-size: 11px;">
-              Auto-detected from: ${suggestedChannel}
-            </p>`
-    : ''
-}
-      </div>
-    `;
+      if (channelInput && suggestedChannel) {
+        channelInput.value = suggestedChannel.toLowerCase().replace(/\s+/g, '');
+      }
+
+      if (suggestedChannel && autoDetectedElement && detectedChannelSpan) {
+        detectedChannelSpan.textContent = suggestedChannel;
+        autoDetectedElement.removeAttribute('hidden');
+      }
+    } catch (error) {
+      console.error('yt-twitch-chat: Failed to load template, falling back to inline HTML:', error);
+      // Fallback to original inline HTML if template loading fails
+      const title = 'Connect Twitch Chat';
+      const description = 'Would you like to associate a Twitch chat with this YouTube channel?';
+      promptContainer.innerHTML = `
+        <div style="text-align: center; max-width: 300px;">
+          <div style="margin-bottom: 16px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="color: #9146ff; margin-bottom: 12px;">
+              <path d="M2.149 0L.537 4.119v15.581h5.4V24l4.119-4.3h3.23L21.463 12V0H2.149zM19.541 11.16l-2.42 2.42H13.9l-2.148 2.148v-2.148H7.582V1.922h11.959V11.16z"/>
+              <path d="M15.789 5.559h-1.93v5.4h1.93V5.559zM11.67 5.559H9.74v5.4h1.93V5.559z"/>
+            </svg>
+            <h3 style="margin: 0 0 8px 0; color: var(--yt-spec-text-primary); font-size: 16px; font-weight: 500;">${title}</h3>
+            <p style="margin: 0 0 16px 0; color: var(--yt-spec-text-secondary); font-size: 13px; line-height: 1.4;">
+              ${description}
+            </p>
+          </div>
+          <div style="width: 100%; margin-bottom: 16px;">
+            <input type="text" id="twitch-channel-input" placeholder="Enter Twitch channel name"
+                   value="${suggestedChannel.toLowerCase().replace(/\s+/g, '')}"
+                   style="width: 100%; padding: 10px; border: 1px solid var(--yt-spec-10-percent-layer);
+                          border-radius: 4px; font-size: 14px; background: var(--yt-spec-base-background);
+                          color: var(--yt-spec-text-primary); box-sizing: border-box;">
+          </div>
+          <div style="display: flex; gap: 8px; width: 100%;">
+            <button id="cancel-twitch-setup" style="flex: 1; padding: 10px; border: 1px solid var(--yt-spec-10-percent-layer);
+                    background: transparent; color: var(--yt-spec-text-primary); border-radius: 4px; cursor: pointer; font-size: 13px;">
+              Keep YouTube Chat
+            </button>
+            <button id="confirm-twitch-setup" style="flex: 1; padding: 10px; border: none; background: #9146ff;
+                    color: white; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">
+              Connect Twitch
+            </button>
+          </div>
+          ${suggestedChannel ? `<p style="margin: 12px 0 0 0; color: var(--yt-spec-text-secondary); font-size: 11px;">Auto-detected from: ${suggestedChannel}</p>` : ''}
+        </div>
+      `;
+    }
 
     // Position the prompt as a sibling to chat container
     this.originalChatContainer.parentNode!.insertBefore(promptContainer, this.originalChatContainer.nextSibling);
@@ -769,6 +762,9 @@ class YouTubeTwitchChatReplacer {
           // Capture the original YouTube chat iframe for restoration later
           const youtubeIframe = chatContainer.querySelector('#chatframe') as HTMLIFrameElement;
           if (youtubeIframe) {
+            // Store reference to YouTube iframe
+            this.youtubeIframe = youtubeIframe;
+
             // Store the complete iframe HTML for full restoration
             this.originalYouTubeIframeHTML = youtubeIframe.outerHTML;
             console.log('yt-twitch-chat: Captured original YouTube iframe HTML');
@@ -873,7 +869,10 @@ class YouTubeTwitchChatReplacer {
   private createTwitchChatContainer(): void {
     // Remove existing Twitch chat if present
     const existingTwitchIframe = document.querySelector('#twitch-chat-iframe');
-    existingTwitchIframe?.remove();
+    if (existingTwitchIframe) {
+      existingTwitchIframe.remove();
+      this.twitchIframe = null; // Clear the reference
+    }
 
     if (!this.originalChatContainer || !this.twitchChannel) {
       return;
@@ -885,14 +884,16 @@ class YouTubeTwitchChatReplacer {
       return;
     }
 
-    const youtubeIframe = document.querySelector('#chatframe') as HTMLIFrameElement;
     const twitchIframe = document.createElement('iframe');
     twitchIframe.id = 'twitch-chat-iframe';
 
-    if (youtubeIframe) {
-      twitchIframe.style.cssText = youtubeIframe.style.cssText;
+    // Store reference to Twitch iframe
+    this.twitchIframe = twitchIframe;
+
+    if (this.youtubeIframe) {
+      twitchIframe.style.cssText = this.youtubeIframe.style.cssText;
       // Convert DOMTokenList to array for spreading
-      twitchIframe.classList.add(...Array.from(youtubeIframe.classList));
+      twitchIframe.classList.add(...Array.from(this.youtubeIframe.classList));
     }
 
     const isDarkMode = this.detectDarkMode();
@@ -930,6 +931,8 @@ class YouTubeTwitchChatReplacer {
     const existingYouTubeIframe = this.originalChatContainer.querySelector('#chatframe');
     if (existingYouTubeIframe) {
       console.log('yt-twitch-chat: YouTube iframe already exists, no need to restore');
+      // Update reference in case it's not set
+      this.youtubeIframe = existingYouTubeIframe as HTMLIFrameElement;
       return;
     }
 
@@ -947,6 +950,10 @@ class YouTubeTwitchChatReplacer {
 
       // Insert the restored iframe into the chat container
       this.originalChatContainer.appendChild(restoredIframe);
+
+      // Update the YouTube iframe reference
+      this.youtubeIframe = restoredIframe;
+
       console.log('yt-twitch-chat: Restored YouTube iframe from stored HTML with proper URL');
     } else {
       console.error('yt-twitch-chat: Failed to restore YouTube iframe from HTML');
@@ -954,14 +961,16 @@ class YouTubeTwitchChatReplacer {
   }
 
   private async updateChatDisplay(): Promise<void> {
-    const youtubeIframe = document.querySelector('#chatframe') as HTMLElement;
-    const twitchIframe = document.querySelector('#twitch-chat-iframe') as HTMLElement;
+    // Update iframe references in case they've changed
+    this.youtubeIframe = document.querySelector('#chatframe') as HTMLIFrameElement;
+    this.twitchIframe = document.querySelector('#twitch-chat-iframe') as HTMLIFrameElement;
+
     const preloadBothChats = await this.getPreloadSetting();
 
     if (this.useTwitchChat && this.twitchChannel) {
       // User wants to show Twitch chat
 
-      if (!twitchIframe) {
+      if (!this.twitchIframe) {
         console.log('yt-twitch-chat: Creating Twitch chat container on demand');
         this.createTwitchChatContainer();
         return; // createTwitchChatContainer will call updateChatDisplay again
@@ -970,107 +979,79 @@ class YouTubeTwitchChatReplacer {
       if (preloadBothChats) {
         // PRELOAD MODE: Use opacity for seamless switching, keep both loaded
         console.log('yt-twitch-chat: Using preload mode - hiding YouTube with opacity');
-        if (youtubeIframe) {
-          youtubeIframe.style.opacity = '0';
-          youtubeIframe.style.pointerEvents = 'none';
-          youtubeIframe.style.zIndex = '1';
-          youtubeIframe.tabIndex = -1;
-          youtubeIframe.setAttribute('inert', '');
-          youtubeIframe.setAttribute('aria-hidden', 'true');
+        if (this.youtubeIframe) {
+          this.youtubeIframe.style.opacity = '0';
+          this.youtubeIframe.style.pointerEvents = 'none';
+          this.youtubeIframe.style.zIndex = '1';
+          this.youtubeIframe.tabIndex = -1;
+          this.youtubeIframe.setAttribute('inert', '');
+          this.youtubeIframe.setAttribute('aria-hidden', 'true');
         }
-        twitchIframe.style.opacity = '1';
-        twitchIframe.style.pointerEvents = 'auto';
-        twitchIframe.style.zIndex = '1000';
-        twitchIframe.tabIndex = 0;
-        twitchIframe.removeAttribute('inert');
-        twitchIframe.setAttribute('aria-hidden', 'false');
+        this.twitchIframe.style.opacity = '1';
+        this.twitchIframe.style.pointerEvents = 'auto';
+        this.twitchIframe.style.zIndex = '1000';
+        this.twitchIframe.tabIndex = 0;
+        this.twitchIframe.removeAttribute('inert');
+        this.twitchIframe.setAttribute('aria-hidden', 'false');
       } else {
         // RESOURCE SAVING MODE: Show Twitch, completely remove YouTube to save maximum resources
         console.log('yt-twitch-chat: Using resource-saving mode - showing Twitch, removing YouTube iframe completely');
 
         // Completely remove YouTube iframe to save maximum resources
-        if (youtubeIframe) {
+        if (this.youtubeIframe) {
           console.log('yt-twitch-chat: Removing YouTube iframe completely to save resources');
-          youtubeIframe.remove();
+          this.youtubeIframe.remove();
+          this.youtubeIframe = null; // Clear the reference
         }
 
-        twitchIframe.style.display = 'block';
-        twitchIframe.style.opacity = '1';
-        twitchIframe.style.pointerEvents = 'auto';
-        twitchIframe.style.zIndex = '1000';
-        twitchIframe.tabIndex = 0;
-        twitchIframe.removeAttribute('inert');
-        twitchIframe.setAttribute('aria-hidden', 'false');
+        this.twitchIframe.style.display = 'block';
+        this.twitchIframe.style.opacity = '1';
+        this.twitchIframe.style.pointerEvents = 'auto';
+        this.twitchIframe.style.zIndex = '1000';
+        this.twitchIframe.tabIndex = 0;
+        this.twitchIframe.removeAttribute('inert');
+        this.twitchIframe.setAttribute('aria-hidden', 'false');
       }
     } else {
       // User wants to show YouTube chat
 
-      if (preloadBothChats && twitchIframe) {
+      if (preloadBothChats && this.twitchIframe) {
         // PRELOAD MODE: Use opacity for seamless switching, keep both loaded
         console.log('yt-twitch-chat: Using preload mode - hiding Twitch with opacity');
-        if (youtubeIframe) {
-          youtubeIframe.style.opacity = '1';
-          youtubeIframe.style.pointerEvents = 'auto';
-          youtubeIframe.style.zIndex = '1000';
-          youtubeIframe.tabIndex = 0;
-          youtubeIframe.removeAttribute('inert');
-          youtubeIframe.setAttribute('aria-hidden', 'false');
+        if (this.youtubeIframe) {
+          this.youtubeIframe.style.opacity = '1';
+          this.youtubeIframe.style.pointerEvents = 'auto';
+          this.youtubeIframe.style.zIndex = '1000';
+          this.youtubeIframe.tabIndex = 0;
+          this.youtubeIframe.removeAttribute('inert');
+          this.youtubeIframe.setAttribute('aria-hidden', 'false');
         }
-        twitchIframe.style.opacity = '0';
-        twitchIframe.style.pointerEvents = 'none';
-        twitchIframe.style.zIndex = '1';
-        twitchIframe.tabIndex = -1;
-        twitchIframe.setAttribute('inert', '');
-        twitchIframe.setAttribute('aria-hidden', 'true');
+        this.twitchIframe.style.opacity = '0';
+        this.twitchIframe.style.pointerEvents = 'none';
+        this.twitchIframe.style.zIndex = '1';
+        this.twitchIframe.tabIndex = -1;
+        this.twitchIframe.setAttribute('inert', '');
+        this.twitchIframe.setAttribute('aria-hidden', 'true');
       } else {
         // RESOURCE SAVING MODE: Remove Twitch iframe completely, restore YouTube iframe to save maximum resources
-        console.log('yt-twitch-chat: Using resource-saving mode - removing Twitch iframe completely, restoring YouTube iframe');
-        if (twitchIframe) {
+        console.log('yt-twitch-chat: Using resource-saving mode');
+        if (this.twitchIframe) {
           console.log('yt-twitch-chat: Removing Twitch iframe to save resources');
-          twitchIframe.remove();
+          this.twitchIframe.remove();
+          this.twitchIframe = null; // Clear the reference
         }
 
         // Ensure YouTube iframe is restored if it was removed
-        if (!youtubeIframe) {
+        if (!this.youtubeIframe) {
           console.log('yt-twitch-chat: YouTube iframe missing, restoring from stored HTML');
           this.restoreYouTubeIframe();
-          // Re-query the YouTube iframe after restoration
-          const restoredYoutubeIframe = document.querySelector('#chatframe') as HTMLElement;
-          if (restoredYoutubeIframe) {
-            // Ensure the restored iframe has the proper src
-            const restoredFrame = restoredYoutubeIframe as HTMLIFrameElement;
-            if (this.originalYouTubeChatSrc && (!restoredFrame.src || restoredFrame.src.includes('about:blank'))) {
-              console.log('yt-twitch-chat: Setting restored iframe src in updateChatDisplay');
-              restoredFrame.src = this.originalYouTubeChatSrc;
-            }
-
-            restoredYoutubeIframe.style.display = 'block';
-            restoredYoutubeIframe.style.opacity = '';
-            restoredYoutubeIframe.style.pointerEvents = '';
-            restoredYoutubeIframe.style.zIndex = '';
-            restoredYoutubeIframe.tabIndex = 0;
-            restoredYoutubeIframe.removeAttribute('inert');
-            restoredYoutubeIframe.setAttribute('aria-hidden', 'false');
-          }
-        } else {
-          // YouTube iframe exists, just ensure it's visible and accessible
-          const youtubeFrame = youtubeIframe as HTMLIFrameElement;
-          if (this.originalYouTubeChatSrc && (!youtubeFrame.src || youtubeFrame.src.includes('about:blank'))) {
-            console.log('yt-twitch-chat: Restoring existing iframe src in updateChatDisplay');
-            youtubeFrame.src = this.originalYouTubeChatSrc;
-          }
-
-          youtubeIframe.style.display = 'block';
-          youtubeIframe.style.opacity = '';
-          youtubeIframe.style.pointerEvents = '';
-          youtubeIframe.style.zIndex = '';
-          youtubeIframe.tabIndex = 0;
-          youtubeIframe.removeAttribute('inert');
-          youtubeIframe.setAttribute('aria-hidden', 'false');
+          // The restoreYouTubeIframe method will update this.youtubeIframe
         }
       }
     }
-  }  private detectDarkMode(): boolean {
+  }
+
+  private detectDarkMode(): boolean {
     // Check YouTube's dark mode
     const html = document.documentElement;
     const isDarkMode =

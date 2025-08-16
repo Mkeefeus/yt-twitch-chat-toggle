@@ -8,6 +8,15 @@ Thumbs.db
 *.swp
 *.swo
 
+# Ignore generated CSS files from SCSS
+src/styles.css
+src/styles.css.map
+src/popup.css
+src/popup.css.map
+
+# Remove example folder
+example-scss/
+
 # Ignore temporary files
 *.tmp
 *.temp

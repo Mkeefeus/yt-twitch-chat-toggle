@@ -1,0 +1,281 @@
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// Popup-specific variables
+$popup-width: 320px;
+$popup-bg: #fff;
+$popup-text: #333;
+$popup-border: #e0e0e0;
+$popup-secondary: #666;
+$popup-accent: #4285f4;
+$popup-accent-light: rgba(66, 133, 244, 0.2);
+
+body {
+  width: $popup-width;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: $popup-bg;
+  color: $popup-text;
+}
+
+.container {
+  padding: $spacing-lg;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: $spacing-xl;
+  border-bottom: 1px solid $popup-border;
+  padding-bottom: $spacing-md;
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: $popup-text;
+  }
+}
+
+.channel-info {
+  margin-top: $spacing-sm;
+  padding: $spacing-xs $spacing-sm;
+  background: #f0f0f0;
+  border-radius: $border-radius;
+  text-align: center;
+
+  small {
+    color: $popup-secondary;
+    font-size: 11px;
+  }
+}
+
+.controls {
+  margin-bottom: $spacing-lg;
+}
+
+.input-group {
+  margin-bottom: $spacing-lg;
+  position: relative;
+
+  label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+  }
+
+  input[type="text"] {
+    width: calc(100% - 44px);
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid #ddd;
+    border-radius: $border-radius;
+    font-size: 13px;
+    box-sizing: border-box;
+    height: 36px;
+
+    &:focus {
+      outline: none;
+      border-color: $popup-accent;
+      box-shadow: 0 0 0 2px $popup-accent-light;
+    }
+  }
+}
+
+.auto-fill-btn {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ddd;
+  border-radius: $border-radius;
+  background: #f8f9fa;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #e8f0fe;
+    border-color: $popup-accent;
+  }
+}
+
+.toggle-group {
+  margin-bottom: $spacing-lg;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $spacing-sm;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: #555;
+
+  .description {
+    font-size: 11px;
+    color: $popup-secondary;
+    font-weight: normal;
+    margin-top: 2px;
+  }
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: #ccc;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+
+  &.active {
+    background: $twitch-purple;
+  }
+
+  .toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform $transition-fast;
+
+    .active & {
+      transform: translateX(20px);
+    }
+  }
+}
+
+.status {
+  margin-bottom: $spacing-lg;
+
+  &.active {
+    color: $twitch-purple;
+  }
+
+  &.inactive {
+    color: $popup-secondary;
+  }
+}
+
+.switch-btn {
+  width: 100%;
+  padding: $spacing-md;
+  border: none;
+  border-radius: $border-radius;
+  background: $twitch-purple;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color $transition-fast;
+  margin-bottom: $spacing-sm;
+
+  &:hover {
+    background: $twitch-purple-dark;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
+}
+
+.settings {
+  margin-top: $spacing-xl;
+  padding-top: $spacing-lg;
+  border-top: 1px solid $popup-border;
+
+  .settings-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: $spacing-md;
+    color: $popup-text;
+  }
+}
+
+.settings-group {
+  margin-bottom: $spacing-lg;
+
+  .setting-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $spacing-sm;
+
+    .setting-label {
+      font-size: 13px;
+      color: #555;
+
+      .setting-description {
+        font-size: 11px;
+        color: $popup-secondary;
+        font-weight: normal;
+        margin-top: 2px;
+      }
+    }
+
+    .setting-control {
+      .toggle-switch {
+        width: 40px;
+        height: 20px;
+
+        .toggle-slider {
+          width: 16px;
+          height: 16px;
+          top: 2px;
+          left: 2px;
+
+          .active & {
+            transform: translateX(18px);
+          }
+        }
+      }
+    }
+  }
+}
+
+.error {
+  color: #d93025;
+  font-size: 12px;
+  margin-top: $spacing-xs;
+}
+
+.success {
+  color: #137333;
+  font-size: 12px;
+  margin-top: $spacing-xs;
+}
+
+// Loading state
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+// Animation for toggle switches
+.toggle-switch {
+  .toggle-slider {
+    transition: all $transition-fast cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+// Focus styles for accessibility
+.toggle-switch:focus-visible {
+  outline: 2px solid $popup-accent;
+  outline-offset: 2px;
+}
+
+button:focus-visible {
+  outline: 2px solid $popup-accent;
+  outline-offset: 2px;
+}

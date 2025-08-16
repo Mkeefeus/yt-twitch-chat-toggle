@@ -1,0 +1,73 @@
+<div style="text-align: center; max-width: 300px">
+    <div style="margin-bottom: 16px">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" style="color: #9146ff; margin-bottom: 12px">
+            <path
+                d="M2.149 0L.537 4.119v15.581h5.4V24l4.119-4.3h3.23L21.463 12V0H2.149zM19.541 11.16l-2.42 2.42H13.9l-2.148 2.148v-2.148H7.582V1.922h11.959V11.16z"
+            />
+            <path d="M15.789 5.559h-1.93v5.4h1.93V5.559zM11.67 5.559H9.74v5.4h1.93V5.559z" />
+        </svg>
+        <h3 style="margin: 0 0 8px 0; color: var(--yt-spec-text-primary); font-size: 16px; font-weight: 500" data-title>
+            Connect Twitch Chat
+        </h3>
+        <p style="margin: 0 0 16px 0; color: var(--yt-spec-text-secondary); font-size: 13px; line-height: 1.4" data-description>
+            Would you like to associate a Twitch chat with this YouTube channel?
+        </p>
+    </div>
+
+    <div style="width: 100%; margin-bottom: 16px">
+        <input
+            type="text"
+            id="twitch-channel-input"
+            placeholder="Enter Twitch channel name"
+            data-suggested-channel=""
+            style="
+                width: 100%;
+                padding: 10px;
+                border: 1px solid var(--yt-spec-10-percent-layer);
+                border-radius: 4px;
+                font-size: 14px;
+                background: var(--yt-spec-base-background);
+                color: var(--yt-spec-text-primary);
+                box-sizing: border-box;
+            "
+        />
+    </div>
+
+    <div style="display: flex; gap: 8px; width: 100%">
+        <button
+            id="cancel-twitch-setup"
+            style="
+                flex: 1;
+                padding: 10px;
+                border: 1px solid var(--yt-spec-10-percent-layer);
+                background: transparent;
+                color: var(--yt-spec-text-primary);
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 13px;
+            "
+        >
+            Keep YouTube Chat
+        </button>
+        <button
+            id="confirm-twitch-setup"
+            style="
+                flex: 1;
+                padding: 10px;
+                border: none;
+                background: #9146ff;
+                color: white;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 500;
+            "
+        >
+            Connect Twitch
+        </button>
+    </div>
+
+    <p style="margin: 12px 0 0 0; color: var(--yt-spec-text-secondary); font-size: 11px" data-auto-detected hidden>
+        Auto-detected from: <span data-detected-channel></span>
+    </p>
+</div>
