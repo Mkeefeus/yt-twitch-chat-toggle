@@ -1,214 +1,129 @@
 @use 'variables' as *;
-@use 'mixins' as *;
-@use 'sass:color';
 
-// Popup-specific variables - Light Mode
+// Root CSS variables for theming
 :root {
-  --popup-bg: #fff;
-  --popup-text: #333;
-  --popup-border: #e1e3e6;
-  --popup-secondary: #666;
-  --popup-accent: #9146ff;
-  --popup-accent-light: rgba(145, 70, 255, 0.1);
-  --popup-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  --popup-input-bg: #fff;
-  --popup-button-bg: #f8f9fa;
-  --popup-success-bg: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
-  --popup-success-text: #155724;
-  --popup-success-border: #c3e6cb;
-  --popup-error-bg: linear-gradient(135deg, #fdf2f2 0%, #fecaca 100%);
-  --popup-error-text: #721c24;
-  --popup-error-border: #f5c6cb;
-  --popup-info-bg: linear-gradient(135deg, #f8f9ff 0%, #e3f2fd 100%);
-  --popup-info-text: #0c5460;
-  --popup-info-border: #b8daff;
-  --popup-channel-info-bg: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+  --bg: #fff;
+  --text: #333;
+  --text-secondary: #666;
+  --border: #e1e3e6;
+  --input-bg: #fff;
+  --button-bg: #f8f9fa;
+  --accent: #{$twitch-purple};
+  --accent-light: #{$twitch-purple-light};
+  --success: #22c55e;
+  --error: #ef4444;
+  --info: #3b82f6;
 }
 
-// Dark Mode
 @media (prefers-color-scheme: dark) {
   :root {
-    --popup-bg: #1a1a1a;
-    --popup-text: #e1e1e1;
-    --popup-border: #404040;
-    --popup-secondary: #b0b0b0;
-    --popup-accent: #9146ff;
-    --popup-accent-light: rgba(145, 70, 255, 0.2);
-    --popup-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    --popup-input-bg: #2a2a2a;
-    --popup-button-bg: #2a2a2a;
-    --popup-success-bg: linear-gradient(135deg, #1a2e1a 0%, #2d4a2d 100%);
-    --popup-success-text: #4caf50;
-    --popup-success-border: #4caf50;
-    --popup-error-bg: linear-gradient(135deg, #2e1a1a 0%, #4a2d2d 100%);
-    --popup-error-text: #f44336;
-    --popup-error-border: #f44336;
-    --popup-info-bg: linear-gradient(135deg, #1a1a2e 0%, #2d2d4a 100%);
-    --popup-info-text: #2196f3;
-    --popup-info-border: #2196f3;
-    --popup-channel-info-bg: linear-gradient(135deg, #2a2a35 0%, #35355a 100%);
+    --bg: #1a1a1a;
+    --text: #e1e1e1;
+    --text-secondary: #a1a1a1;
+    --border: #404040;
+    --input-bg: #2a2a2a;
+    --button-bg: #2a2a2a;
+    --success: #16a34a;
+    --error: #dc2626;
+    --info: #2563eb;
   }
 }
 
-$popup-width: 340px;
-
+// Base styles
 body {
-  width: $popup-width;
+  width: 320px;
   margin: 0;
-  padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--popup-bg);
-  color: var(--popup-text);
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.container {
   padding: $spacing-lg;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
 }
 
+// Layout components
 .header {
   text-align: center;
-  margin-bottom: $spacing-xl;
-  border-bottom: 1px solid var(--popup-border);
-  padding-bottom: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  padding-bottom: $spacing-md;
+  border-bottom: 1px solid var(--border);
 
   h2 {
     margin: 0;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
-    color: var(--popup-text);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: $spacing-sm;
-
-    &::before {
-      content: "🎮";
-      font-size: 20px;
-    }
   }
 }
 
 .channel-info {
-  margin-top: $spacing-md;
   padding: $spacing-sm $spacing-md;
-  background: var(--popup-channel-info-bg);
-  border: 1px solid rgba(145, 70, 255, 0.2);
-  border-radius: $border-radius-lg;
+  margin-bottom: $spacing-md;
+  background: var(--accent-light);
+  border-radius: $border-radius;
   text-align: center;
 
   small {
-    color: var(--popup-accent);
-    font-size: 12px;
+    color: var(--accent);
     font-weight: 500;
   }
 }
 
-.controls {
-  margin-bottom: $spacing-xl;
-}
-
+// Form elements
 .input-group {
   margin-bottom: $spacing-lg;
   position: relative;
 
   label {
     display: block;
-    margin-bottom: $spacing-sm;
+    margin-bottom: $spacing-xs;
+    font-weight: 500;
     font-size: 13px;
-    font-weight: 600;
-    color: var(--popup-text);
   }
 
   input[type="text"] {
-    width: calc(100% - 44px);
-    padding: $spacing-md;
-    border: 2px solid var(--popup-border);
-    border-radius: $border-radius-lg;
+    width: 100%;
+    padding: $spacing-sm $spacing-md;
+    padding-right: 44px; // Space for auto-fill button
+    border: 1px solid var(--border);
+    border-radius: $border-radius;
+    background: var(--input-bg);
+    color: var(--text);
     font-size: 14px;
-    box-sizing: border-box;
-    height: 44px;
     font-family: inherit;
-    transition: all $transition-fast;
-    background: var(--popup-input-bg);
-    color: var(--popup-text);
+    box-sizing: border-box;
 
     &:focus {
-      outline: none;
-      border-color: var(--popup-accent);
-      box-shadow: 0 0 0 3px var(--popup-accent-light);
+      outline: 2px solid var(--accent);
+      outline-offset: -1px;
     }
 
     &::placeholder {
-      color: var(--popup-secondary);
+      color: var(--text-secondary);
     }
   }
 }
 
 .auto-fill-btn {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 44px;
-  height: 44px;
-  border: 2px solid var(--popup-border);
-  border-radius: $border-radius-lg;
-  background: var(--popup-button-bg);
+  right: 6px;
+  bottom: 6px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: $border-radius;
+  background: var(--button-bg);
+  color: var(--text);
   cursor: pointer;
-  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all $transition-fast;
-  color: var(--popup-text);
+  transition: opacity $transition-fast;
 
   &:hover {
-    background: var(--popup-accent-light);
-    border-color: var(--popup-accent);
-    transform: scale(1.05);
-  }
-
-  &:active {
-    transform: scale(0.95);
+    opacity: 0.7;
   }
 }
 
-.button-group {
-  margin-bottom: $spacing-xl;
-
-  .save-btn {
-    width: 100%;
-    padding: $spacing-md $spacing-lg;
-    border: none;
-    border-radius: $border-radius-lg;
-    background: linear-gradient(135deg, var(--popup-accent) 0%, #{$twitch-purple-dark} 100%);
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all $transition-fast;
-    box-shadow: var(--popup-shadow);
-    font-family: inherit;
-
-    &:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 12px rgba(145, 70, 255, 0.3);
-    }
-
-    &:active {
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      background: var(--popup-secondary);
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-  }
-}
-
+// Toggle switch
 .toggle-group {
   margin-bottom: $spacing-lg;
 }
@@ -217,10 +132,7 @@ body {
   display: flex;
   align-items: center;
   gap: $spacing-md;
-  font-size: 14px;
-  font-weight: 500;
   cursor: pointer;
-  color: var(--popup-text);
   user-select: none;
 
   input[type="checkbox"] {
@@ -228,11 +140,11 @@ body {
   }
 
   .slider {
-    position: relative;
-    width: 48px;
+    width: 44px;
     height: 24px;
-    background: var(--popup-secondary);
-    border-radius: 24px;
+    background: var(--border);
+    border-radius: 12px;
+    position: relative;
     transition: background-color $transition-fast;
     flex-shrink: 0;
 
@@ -246,117 +158,96 @@ body {
       background: white;
       border-radius: 50%;
       transition: transform $transition-fast;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     }
   }
 
-  input[type="checkbox"]:checked + .slider {
-    background: var(--popup-accent);
+  input:checked + .slider {
+    background: var(--accent);
 
     &::before {
-      transform: translateX(24px);
+      transform: translateX(20px);
     }
   }
+}
 
-  .toggle-text {
-    flex: 1;
+// Buttons
+.save-btn {
+  width: 100%;
+  padding: $spacing-md;
+  border: none;
+  border-radius: $border-radius;
+  background: var(--accent);
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity $transition-fast;
+
+  &:hover {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Status messages
+.status {
+  padding: $spacing-sm $spacing-md;
+  border-radius: $border-radius;
+  font-size: 13px;
+  margin-bottom: $spacing-md;
+  text-align: center;
+
+  &.success {
+    background: color-mix(in srgb, var(--success) 15%, transparent);
+    color: var(--success);
+    border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+  }
+
+  &.error {
+    background: color-mix(in srgb, var(--error) 15%, transparent);
+    color: var(--error);
+    border: 1px solid color-mix(in srgb, var(--error) 30%, transparent);
+  }
+
+  &.info {
+    background: color-mix(in srgb, var(--info) 15%, transparent);
+    color: var(--info);
+    border: 1px solid color-mix(in srgb, var(--info) 30%, transparent);
+  }
+}
+
+// Settings section
+.storage-settings {
+  margin-top: $spacing-lg;
+  padding-top: $spacing-lg;
+  border-top: 1px solid var(--border);
+
+  .toggle-group {
+    margin-bottom: $spacing-md;
   }
 
   small {
     display: block;
-    color: var(--popup-secondary);
+    color: var(--text-secondary);
     font-size: 12px;
-    font-weight: normal;
     margin-top: $spacing-xs;
     line-height: 1.3;
   }
 }
 
-.storage-settings {
-  margin-top: $spacing-xl;
-  padding-top: $spacing-lg;
-  border-top: 1px solid var(--popup-border);
-}
-
-.status {
-  margin-bottom: $spacing-lg;
-  padding: $spacing-sm $spacing-md;
-  border-radius: $border-radius-lg;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-  transition: all $transition-fast;
-
-  &.success {
-    background: var(--popup-success-bg);
-    color: var(--popup-success-text);
-    border: 1px solid var(--popup-success-border);
-  }
-
-  &.error {
-    background: var(--popup-error-bg);
-    color: var(--popup-error-text);
-    border: 1px solid var(--popup-error-border);
-  }
-
-  &.info {
-    background: var(--popup-info-bg);
-    color: var(--popup-info-text);
-    border: 1px solid var(--popup-info-border);
-  }
-}
-
+// Info section
 .info {
-  margin-top: $spacing-xl;
+  margin-top: $spacing-lg;
   text-align: center;
 
   p {
     margin: 0;
-    color: var(--popup-secondary);
+    color: var(--text-secondary);
     font-size: 12px;
-    line-height: 1.4;
-
-    small {
-      color: inherit;
-    }
-  }
-}
-
-// Loading state
-.loading {
-  opacity: 0.6;
-  pointer-events: none;
-
-  * {
-    cursor: wait !important;
-  }
-}
-
-// Focus styles for accessibility
-.toggle-label:focus-within .slider {
-  outline: 2px solid var(--popup-accent);
-  outline-offset: 2px;
-}
-
-button:focus-visible {
-  outline: 2px solid var(--popup-accent);
-  outline-offset: 2px;
-}
-
-input[type="text"]:focus-visible {
-  outline: none; // We use box-shadow instead
-}
-
-// Smooth animations
-* {
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-// Hover effects for better UX
-.toggle-label:hover .slider {
-  opacity: 0.8;
-
-  input[type="checkbox"]:checked + & {
-    opacity: 0.9;
   }
 }

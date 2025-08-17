@@ -40,13 +40,17 @@ class YouTubeTwitchChatReplacer {
   private observer: MutationObserver | null = null;
   private youtubeIframe: HTMLIFrameElement | null = null;
   private twitchIframe: HTMLIFrameElement | null = null;
+  private promptIframe: HTMLIFrameElement | null = null;
 
   constructor() {
     this.init();
   }
 
   private async init(): Promise<void> {
-    // Set up message listener for popup communication first
+    // Initialize default settings first
+    await this.initializeDefaultSettings();
+
+    // Set up message listener for popup communication
     this.setupMessageListener();
 
     // Wait for page to be ready, then detect channel and load settings
@@ -58,6 +62,40 @@ class YouTubeTwitchChatReplacer {
 
     // Listen for navigation changes (YouTube is SPA)
     this.setupNavigationListener();
+  }
+
+  private async initializeDefaultSettings(): Promise<void> {
+    try {
+      // Check both storages to see if any settings exist
+      const [localResult, syncResult] = await Promise.all([
+        chrome.storage.local.get(['yt_twitch_settings']),
+        chrome.storage.sync.get(['yt_twitch_settings'])
+      ]);
+
+      const hasLocalSettings = localResult.yt_twitch_settings && Object.keys(localResult.yt_twitch_settings).length > 0;
+      const hasSyncSettings = syncResult.yt_twitch_settings && Object.keys(syncResult.yt_twitch_settings).length > 0;
+
+      // Only initialize defaults if no settings exist anywhere
+      if (hasLocalSettings || hasSyncSettings) {
+        console.log('yt-twitch-chat: Existing settings found, skipping default initialization');
+        return;
+      }
+      console.log('yt-twitch-chat: No existing settings found, initializing defaults');
+
+      const defaultSettings: ExtensionSettings = {
+        version: 1,
+        channels: {},
+        lastUpdated: Date.now(),
+        useSync: false, // Default to local storage
+        preloadBothChats: false // Default to load one chat at a time
+      };
+
+      // Save to local storage by default
+      await chrome.storage.local.set({ yt_twitch_settings: defaultSettings });
+      console.log('yt-twitch-chat: Default settings initialized');
+    } catch (error) {
+      console.error('yt-twitch-chat: Error initializing default settings:', error);
+    }
   }
 
   private async initializeAfterDOM(): Promise<void> {
@@ -120,10 +158,12 @@ class YouTubeTwitchChatReplacer {
       const storage = await this.getStorageApi();
       const result = await storage.get(['yt_twitch_settings']);
       const allSettings: ExtensionSettings = result.yt_twitch_settings || {
+        // Fallback defaults (should rarely be used since initializeDefaultSettings runs first)
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
-        useSync: false // Default to local storage
+        useSync: false, // Default to local storage
+        preloadBothChats: false // Default to load one chat at a time
       };
 
       // Get settings for current channel
@@ -156,10 +196,12 @@ class YouTubeTwitchChatReplacer {
       const storage = await this.getStorageApi();
       const result = await storage.get(['yt_twitch_settings']);
       const allSettings: ExtensionSettings = result.yt_twitch_settings || {
+        // Fallback defaults (should rarely be used since initializeDefaultSettings runs first)
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
-        useSync: await this.isSyncStorageEnabled()
+        useSync: await this.isSyncStorageEnabled(),
+        preloadBothChats: false // Default to load one chat at a time
       };
 
       // Update settings for this channel using current instance values
@@ -243,7 +285,12 @@ class YouTubeTwitchChatReplacer {
           await chrome.storage.local.clear(); // Clear local storage
         } else {
           // Just enable sync on existing sync data or create new
-          settingsToUse = syncResult.yt_twitch_settings || { version: 1, channels: {}, lastUpdated: Date.now() };
+          settingsToUse = syncResult.yt_twitch_settings || {
+            version: 1,
+            channels: {},
+            lastUpdated: Date.now(),
+            preloadBothChats: false
+          };
           settingsToUse.useSync = true;
           await chrome.storage.sync.set({ yt_twitch_settings: settingsToUse });
         }
@@ -260,7 +307,12 @@ class YouTubeTwitchChatReplacer {
           await chrome.storage.sync.clear(); // Clear sync storage
         } else {
           // Just disable sync on existing local data or create new
-          settingsToUse = localResult.yt_twitch_settings || { version: 1, channels: {}, lastUpdated: Date.now() };
+          settingsToUse = localResult.yt_twitch_settings || {
+            version: 1,
+            channels: {},
+            lastUpdated: Date.now(),
+            preloadBothChats: false
+          };
           settingsToUse.useSync = false;
           await chrome.storage.local.set({ yt_twitch_settings: settingsToUse });
         }
@@ -277,10 +329,10 @@ class YouTubeTwitchChatReplacer {
       const storage = await this.getStorageApi();
       const result = await storage.get(['yt_twitch_settings']);
       const settings: ExtensionSettings = result.yt_twitch_settings;
-      return settings?.preloadBothChats !== false; // Default to true
+      return settings?.preloadBothChats === true; // Default to false (load one at a time)
     } catch (error) {
       console.error('yt-twitch-chat: Error getting preload setting:', error);
-      return true; // Default to true
+      return false; // Default to false (load one at a time)
     }
   }
 
@@ -294,7 +346,8 @@ class YouTubeTwitchChatReplacer {
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
-        useSync: await this.isSyncStorageEnabled()
+        useSync: await this.isSyncStorageEnabled(),
+        preloadBothChats: false // Default to load one chat at a time
       };
 
       settings.preloadBothChats = preloadBothChats;
@@ -514,8 +567,9 @@ class YouTubeTwitchChatReplacer {
         }
         await this.updateChatDisplay();
       } else {
-        // No Twitch channel set for this YouTube channel
-        console.log('yt-twitch-chat: No Twitch channel set for this YouTube channel');
+        // No Twitch channel set for this YouTube channel - show prompt
+        console.log('yt-twitch-chat: No Twitch channel set for this YouTube channel - showing prompt');
+        this.showChannelPrompt();
       }
     });
   }
@@ -662,8 +716,6 @@ class YouTubeTwitchChatReplacer {
     this.twitchIframe = twitchIframe;
 
     if (this.youtubeIframe) {
-      twitchIframe.style.cssText = this.youtubeIframe.style.cssText;
-      // Convert DOMTokenList to array for spreading
       twitchIframe.classList.add(...Array.from(this.youtubeIframe.classList));
     }
 
@@ -690,6 +742,111 @@ class YouTubeTwitchChatReplacer {
 
     // Insert Twitch iframe into the chat frame
     chatFrame.appendChild(twitchIframe);
+  }
+
+  private showChannelPrompt(): void {
+    if (!this.originalChatContainer) {
+      return;
+    }
+
+    // Remove any existing prompt iframe
+    this.clearPrompt();
+
+    // Find the chat frame container
+    const chatFrame = document.querySelector('ytd-live-chat-frame#chat');
+    if (!chatFrame) {
+      return;
+    }
+
+    console.log('yt-twitch-chat: Creating prompt iframe for chat container:', chatFrame);
+
+    // Create prompt iframe
+    const promptIframe = document.createElement('iframe');
+    promptIframe.id = 'twitch-chat-prompt-iframe';
+
+    // Store reference to prompt iframe
+    this.promptIframe = promptIframe;
+
+    // promptIframe.style.flexGrow = '1';
+    if (this.youtubeIframe?.classList) {
+      promptIframe.classList.add(...Array.from(this.youtubeIframe.classList));
+    }
+
+    // Set the prompt URL (will be served from extension)
+    promptIframe.src = chrome.runtime.getURL('prompt.html');
+
+    // Hide YouTube iframe while prompt is shown
+    if (this.youtubeIframe) {
+      this.youtubeIframe.style.display = 'none';
+    }
+
+    // Set up message listener for prompt responses
+    this.setupPromptMessageListener();
+
+    // Insert prompt iframe into the chat frame
+    chatFrame.appendChild(promptIframe);
+  }
+
+  private clearPrompt(): void {
+    // Remove existing prompt iframe if present
+    const existingPromptIframe = document.querySelector('#twitch-chat-prompt-iframe');
+    if (existingPromptIframe) {
+      existingPromptIframe.remove();
+      this.promptIframe = null;
+    }
+  }
+
+  private setupPromptMessageListener(): void {
+    const handlePromptMessage = async (event: MessageEvent) => {
+      // Only handle messages from our prompt iframe
+      if (event.source !== this.promptIframe?.contentWindow) {
+        return;
+      }
+
+      const data = event.data;
+      if (data.type !== 'TWITCH_CHAT_PROMPT_RESPONSE') {
+        return;
+      }
+
+      console.log('yt-twitch-chat: Received prompt response:', data);
+
+      if (data.action === 'connect' && data.twitchChannel) {
+        // User wants to connect Twitch chat
+        this.twitchChannel = data.twitchChannel;
+        this.useTwitchChat = true;
+
+        // Save settings
+        await this.saveChannelSpecificSettings();
+
+        // Clear the prompt
+        this.clearPrompt();
+
+        // Create and show Twitch chat
+        this.createTwitchChatContainer();
+        await this.updateChatDisplay();
+
+      } else if (data.action === 'keep_youtube') {
+        // User wants to keep YouTube chat
+        this.twitchChannel = '';
+        this.useTwitchChat = false;
+
+        // Save settings (empty Twitch channel means YouTube preference)
+        await this.saveChannelSpecificSettings();
+
+        // Clear the prompt
+        this.clearPrompt();
+      }
+
+      // Restore YouTube iframe visibility
+      if (this.youtubeIframe) {
+        this.youtubeIframe.style = ''; // Reset styles to default
+      }
+
+      // Remove the message listener after handling
+      window.removeEventListener('message', handlePromptMessage);
+    };
+
+    window.addEventListener('message', handlePromptMessage);
   }
 
   private restoreYouTubeIframe(): void {

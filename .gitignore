@@ -9,10 +9,8 @@ Thumbs.db
 *.swo
 
 # Ignore generated CSS files from SCSS
-src/styles.css
-src/styles.css.map
-src/popup.css
-src/popup.css.map
+src/*.css
+src/*.css.map
 
 # Ignore temporary files
 *.tmp
