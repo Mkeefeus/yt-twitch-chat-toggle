@@ -9,7 +9,7 @@
     "package": "bun run build && cd dist && zip -r ../yt-twitch-chat-toggle.zip .",
     "compile": "bun run tsc",
     "compile-scss": "sass src/styles/styles.scss src/styles.css && sass src/styles/popup.scss src/popup.css",
-    "copy-assets": "cp src/manifest.json dist/ && cp src/popup.html dist/ && cp src/popup.css dist/ && cp src/styles.css dist/ && cp src/prompt.html dist/ && cp -r src/icons dist/ && cp -r src/templates dist/",
+    "copy-assets": "cp src/manifest.json dist/ && cp src/popup.html dist/ && cp src/popup.css dist/ && cp src/styles.css dist/ && cp -r src/icons dist/",
     "watch": "bun run tsc --watch",
     "watch-scss": "sass --watch src/styles/styles.scss:src/styles.css & sass --watch src/styles/popup.scss:src/popup.css",
     "dev": "bun run clean && bun run compile-scss && bun run watch-scss & bun run watch",

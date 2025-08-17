@@ -137,7 +137,7 @@ class YouTubeTwitchChatReplacer {
         // No settings found for this channel
         this.twitchChannel = '';
         this.useTwitchChat = false;
-        console.log(`yt-twitch-chat: No settings found for ${this.currentYouTubeChannel} - will show prompt`);
+        console.log(`yt-twitch-chat: No settings found for ${this.currentYouTubeChannel}`);
       }
 
     } catch (error) {
@@ -190,22 +190,11 @@ class YouTubeTwitchChatReplacer {
   private async handleSettingsUpdated(): Promise<void> {
     console.log('yt-twitch-chat: Settings updated from popup, refreshing...');
 
-    // Clear any active prompt
-    this.clearPrompt();
-
     // Reload settings from storage
     await this.loadSettings();
 
     // Update the chat display based on new settings
     await this.updateChatDisplay();
-  }
-
-  private clearPrompt(): void {
-    const promptContainer = document.querySelector('#twitch-channel-prompt');
-    if (promptContainer) {
-      promptContainer.remove();
-      console.log('yt-twitch-chat: Cleared active prompt');
-    }
   }
 
   private async isSyncStorageEnabled(): Promise<boolean> {
@@ -500,171 +489,10 @@ class YouTubeTwitchChatReplacer {
         this.createTwitchChatContainer();
         await this.updateChatDisplay();
       } else {
-        // New channel, prompt for association
-        this.promptForChannelAssociation();
+        // No Twitch channel set for this YouTube channel
+        console.log('yt-twitch-chat: No Twitch channel set for this YouTube channel');
       }
     }
-  }
-
-  private promptForChannelAssociation(): void {
-    // Only prompt if we're on a live stream page with chat
-    const chatFrame = document.querySelector('ytd-live-chat-frame#chat');
-    console.log('yt-twitch-chat: promptForChannelAssociation called. ChatFrame found:', !!chatFrame);
-    if (!chatFrame) {
-      console.log('yt-twitch-chat: No chat frame found, not showing prompt');
-      return;
-    }
-
-    // Show prompt after a short delay to let YouTube finish loading
-    console.log('yt-twitch-chat: Scheduling prompt to show in 2 seconds');
-    setTimeout(async () => {
-      console.log('yt-twitch-chat: About to show channel prompt');
-      await this.showChannelPrompt(true); // true = new channel prompt
-    }, 2000);
-  }
-
-  private async loadTemplate(templatePath: string): Promise<string> {
-    try {
-      const url = chrome.runtime.getURL(templatePath);
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to load template: ${response.status}`);
-      }
-      return await response.text();
-    } catch (error) {
-      console.error('yt-twitch-chat: Error loading template:', error);
-      throw error;
-    }
-  }
-
-  private async showChannelPrompt(isNewChannel: boolean = false): Promise<void> {
-    console.log('yt-twitch-chat: showChannelPrompt called. originalChatContainer:', !!this.originalChatContainer);
-    if (!this.originalChatContainer) {
-      console.log('yt-twitch-chat: No originalChatContainer, cannot show prompt');
-      return;
-    }
-
-    // Find the chat frame container (similar to how we insert Twitch chat)
-    const chatFrame = document.querySelector('ytd-live-chat-frame#chat');
-    if (!chatFrame) {
-      console.log('yt-twitch-chat: No chat frame found');
-      return;
-    }
-
-    // Remove existing prompt if present
-    const existingPrompt = document.querySelector('#twitch-channel-prompt-iframe');
-    if (existingPrompt) {
-      existingPrompt.remove();
-    }
-
-    // Store the current YouTube iframe and hide it (similar to how Twitch chat works)
-    const youtubeIframe = chatFrame.querySelector('#chatframe') as HTMLIFrameElement;
-    if (youtubeIframe) {
-      youtubeIframe.style.opacity = '0';
-      youtubeIframe.style.pointerEvents = 'none';
-      youtubeIframe.style.zIndex = '1';
-      youtubeIframe.setAttribute('aria-hidden', 'true');
-    }
-
-    // Create prompt iframe following the same pattern as Twitch iframe
-    const promptIframe = document.createElement('iframe');
-    promptIframe.id = 'twitch-channel-prompt-iframe';
-
-    // Copy styling and classes from YouTube iframe (same as Twitch iframe)
-    if (youtubeIframe) {
-      promptIframe.style.cssText = youtubeIframe.style.cssText;
-      // Convert DOMTokenList to array for spreading
-      promptIframe.classList.add(...Array.from(youtubeIframe.classList));
-    }
-
-    // Set the prompt HTML file as source
-    const extensionUrl = chrome.runtime.getURL('prompt.html');
-    promptIframe.src = extensionUrl;
-
-    // Set iframe properties for visibility (similar to Twitch iframe when active)
-    promptIframe.style.opacity = '1';
-    promptIframe.style.pointerEvents = 'auto';
-    promptIframe.style.zIndex = '1000';
-    promptIframe.tabIndex = 0;
-    promptIframe.setAttribute('aria-hidden', 'false');
-
-    // Ensure the iframe fills the container properly for centering
-    promptIframe.style.width = '100%';
-    promptIframe.style.height = '100%';
-    promptIframe.style.border = 'none';
-
-    // Auto-detect channel name
-    const suggestedChannel = this.extractChannelName();
-
-    // Set up message listener for iframe communication
-    const messageHandler = async (event: MessageEvent) => {
-      if (event.source !== promptIframe.contentWindow) {return;}
-
-      const { type, data } = event.data;
-
-      if (type === 'PROMPT_CANCEL') {
-        // Remove prompt and restore YouTube iframe
-        promptIframe.remove();
-        window.removeEventListener('message', messageHandler);
-
-        if (youtubeIframe) {
-          youtubeIframe.style.opacity = '1';
-          youtubeIframe.style.pointerEvents = 'auto';
-          youtubeIframe.style.zIndex = '1000';
-          youtubeIframe.setAttribute('aria-hidden', 'false');
-        }
-
-        // For new channels, save the preference to use YouTube chat
-        if (isNewChannel) {
-          this.useTwitchChat = false;
-          this.twitchChannel = ''; // No associated Twitch channel
-          this.saveChannelSpecificSettings();
-        }
-      } else if (type === 'PROMPT_CONFIRM') {
-        const { channelName } = data;
-        if (channelName) {
-          // Make sure we have the current YouTube channel detected
-          const detectedChannel = this.extractChannelName();
-          if (detectedChannel && detectedChannel !== this.currentYouTubeChannel) {
-            console.log(`yt-twitch-chat: Updating YouTube channel from ${this.currentYouTubeChannel} to ${detectedChannel}`);
-            this.currentYouTubeChannel = detectedChannel;
-          }
-
-          console.log(`yt-twitch-chat: Setting up association: ${this.currentYouTubeChannel} -> ${channelName}`);
-
-          this.twitchChannel = channelName;
-          this.useTwitchChat = true;
-
-          // Save channel-specific settings
-          this.saveChannelSpecificSettings();
-
-          // Remove prompt
-          promptIframe.remove();
-          window.removeEventListener('message', messageHandler);
-
-          // Create and show Twitch chat (which will handle hiding YouTube chat)
-          this.createTwitchChatContainer();
-          await this.updateChatDisplay();
-        }
-      }
-    };
-
-    window.addEventListener('message', messageHandler);
-
-    // Insert prompt iframe into the chat frame (same as Twitch iframe)
-    chatFrame.appendChild(promptIframe);
-
-    // Send setup data to iframe once it's loaded
-    promptIframe.addEventListener('load', () => {
-      promptIframe.contentWindow?.postMessage({
-        type: 'SETUP_PROMPT',
-        data: {
-          suggestedChannel,
-          title: 'Connect Twitch Chat',
-          description: 'Would you like to associate a Twitch chat with this YouTube channel?'
-        }
-      }, '*');
-    });
   }
 
   private setupChatReplacer(): void {
@@ -686,9 +514,8 @@ class YouTubeTwitchChatReplacer {
         }
         await this.updateChatDisplay();
       } else {
-        // No Twitch channel set for this YouTube channel, show prompt
-        console.log('yt-twitch-chat: No Twitch channel set, showing prompt');
-        this.promptForChannelAssociation();
+        // No Twitch channel set for this YouTube channel
+        console.log('yt-twitch-chat: No Twitch channel set for this YouTube channel');
       }
     });
   }

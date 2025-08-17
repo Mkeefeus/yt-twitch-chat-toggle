@@ -42,8 +42,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "templates/*",
-        "prompt.html"
+        "templates/*"
       ],
       "matches": [
         "*://www.youtube.com/*"
