@@ -8,7 +8,9 @@ console.log('🔧 Building Chrome extension...');
 const manifest = JSON.parse(readFileSync('dist/manifest.json', 'utf8'));
 
 // Update paths to be relative to dist folder
-manifest.content_scripts[0].js = ['content.js'];
+manifest.content_scripts[0].js = manifest.content_scripts[0].js.map((file: string) =>
+  file.replace(/^dist\//, '')
+);
 manifest.background.service_worker = 'background.js';
 
 // Write updated manifest

@@ -24,7 +24,8 @@
       "css": [
         "styles.css"
       ],
-      "run_at": "document_end"
+      "run_at": "document_end",
+      "all_frames": true
     }
   ],
   "background": {
