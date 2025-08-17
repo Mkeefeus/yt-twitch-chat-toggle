@@ -235,6 +235,15 @@ class YouTubeTwitchChatReplacer {
     // Reload settings from storage
     await this.loadSettings();
 
+    // If a channel association was made (twitchChannel is now set) and there's a prompt showing, clear it
+    if (this.twitchChannel && this.promptIframe) {
+      console.log('yt-twitch-chat: Channel association made from popup, clearing prompt');
+      this.clearPrompt();
+      if (this.youtubeIframe) {
+        this.youtubeIframe.style = '';
+      }
+    }
+
     // Update the chat display based on new settings
     await this.updateChatDisplay();
   }
@@ -359,16 +368,37 @@ class YouTubeTwitchChatReplacer {
       if (!preloadBothChats && this.twitchChannel) {
         if (this.twitchIframe && !this.useTwitchChat) {
           // If we're showing YouTube chat, remove the Twitch iframe to save resources
+          console.log('yt-twitch-chat: Removing inactive Twitch iframe (preload disabled)');
           this.twitchIframe.remove();
           this.twitchIframe = null;
-        } else if (!this.twitchIframe && this.useTwitchChat) {
+        } else if (this.youtubeIframe && this.useTwitchChat) {
+          // If we're showing Twitch chat, remove the YouTube iframe to save resources
+          console.log('yt-twitch-chat: Removing inactive YouTube iframe (preload disabled)');
+          this.youtubeIframe.remove();
+          this.youtubeIframe = null;
+        }
+
+        // Ensure the active chat is properly loaded
+        if (!this.twitchIframe && this.useTwitchChat) {
           // If we're showing Twitch chat but it's not loaded, create it
           this.createTwitchChatContainer();
         }
       }
       // If switching to preload mode, ensure both chats are loaded
-      else if (preloadBothChats && this.twitchChannel && !this.twitchIframe) {
-        this.createTwitchChatContainer();
+      else if (preloadBothChats && this.twitchChannel) {
+        // Ensure both iframes exist for seamless switching
+        if (!this.twitchIframe) {
+          console.log('yt-twitch-chat: Creating Twitch iframe for preload mode');
+          this.createTwitchChatContainer();
+        }
+
+        if (!this.youtubeIframe) {
+          console.log('yt-twitch-chat: Restoring YouTube iframe for preload mode');
+          this.restoreYouTubeIframe();
+        }
+
+        // Set their visibility based on current preference
+        await this.updateChatDisplay();
       }
 
       console.log('yt-twitch-chat: Preload setting changed successfully');
@@ -907,20 +937,17 @@ class YouTubeTwitchChatReplacer {
       if (preloadBothChats) {
         // PRELOAD MODE: Use opacity for seamless switching, keep both loaded
         console.log('yt-twitch-chat: Using preload mode - hiding YouTube with opacity');
-        if (this.youtubeIframe) {
-          this.youtubeIframe.style.opacity = '0';
-          this.youtubeIframe.style.pointerEvents = 'none';
-          this.youtubeIframe.style.zIndex = '1';
-          this.youtubeIframe.tabIndex = -1;
-          this.youtubeIframe.setAttribute('inert', '');
-          this.youtubeIframe.setAttribute('aria-hidden', 'true');
+
+        // Ensure YouTube iframe exists for preload mode
+        if (!this.youtubeIframe) {
+          console.log('yt-twitch-chat: YouTube iframe missing in preload mode, restoring');
+          this.restoreYouTubeIframe();
         }
-        this.twitchIframe.style.opacity = '1';
-        this.twitchIframe.style.pointerEvents = 'auto';
-        this.twitchIframe.style.zIndex = '1000';
-        this.twitchIframe.tabIndex = 0;
-        this.twitchIframe.removeAttribute('inert');
-        this.twitchIframe.setAttribute('aria-hidden', 'false');
+
+        if (this.youtubeIframe) {
+          this.hideIframe(this.youtubeIframe);
+        }
+        this.showIframe(this.twitchIframe);
       } else {
         // RESOURCE SAVING MODE: Show Twitch, completely remove YouTube to save maximum resources
         console.log('yt-twitch-chat: Using resource-saving mode - showing Twitch, removing YouTube iframe completely');
@@ -933,12 +960,7 @@ class YouTubeTwitchChatReplacer {
         }
 
         this.twitchIframe.style.display = 'block';
-        this.twitchIframe.style.opacity = '1';
-        this.twitchIframe.style.pointerEvents = 'auto';
-        this.twitchIframe.style.zIndex = '1000';
-        this.twitchIframe.tabIndex = 0;
-        this.twitchIframe.removeAttribute('inert');
-        this.twitchIframe.setAttribute('aria-hidden', 'false');
+        this.showIframe(this.twitchIframe);
       }
     } else {
       // User wants to show YouTube chat
@@ -946,20 +968,17 @@ class YouTubeTwitchChatReplacer {
       if (preloadBothChats && this.twitchIframe) {
         // PRELOAD MODE: Use opacity for seamless switching, keep both loaded
         console.log('yt-twitch-chat: Using preload mode - hiding Twitch with opacity');
-        if (this.youtubeIframe) {
-          this.youtubeIframe.style.opacity = '1';
-          this.youtubeIframe.style.pointerEvents = 'auto';
-          this.youtubeIframe.style.zIndex = '1000';
-          this.youtubeIframe.tabIndex = 0;
-          this.youtubeIframe.removeAttribute('inert');
-          this.youtubeIframe.setAttribute('aria-hidden', 'false');
+
+        // Ensure YouTube iframe exists for preload mode
+        if (!this.youtubeIframe) {
+          console.log('yt-twitch-chat: YouTube iframe missing in preload mode, restoring');
+          this.restoreYouTubeIframe();
         }
-        this.twitchIframe.style.opacity = '0';
-        this.twitchIframe.style.pointerEvents = 'none';
-        this.twitchIframe.style.zIndex = '1';
-        this.twitchIframe.tabIndex = -1;
-        this.twitchIframe.setAttribute('inert', '');
-        this.twitchIframe.setAttribute('aria-hidden', 'true');
+
+        if (this.youtubeIframe) {
+          this.showIframe(this.youtubeIframe);
+        }
+        this.hideIframe(this.twitchIframe);
       } else {
         // RESOURCE SAVING MODE: Remove Twitch iframe completely, restore YouTube iframe to save maximum resources
         console.log('yt-twitch-chat: Using resource-saving mode');
@@ -977,6 +996,24 @@ class YouTubeTwitchChatReplacer {
         }
       }
     }
+  }
+
+  private showIframe(iframe: HTMLIFrameElement): void {
+    iframe.style.opacity = '1';
+    iframe.style.pointerEvents = 'auto';
+    iframe.style.zIndex = '1000';
+    iframe.tabIndex = 0;
+    iframe.removeAttribute('inert');
+    iframe.setAttribute('aria-hidden', 'false');
+  }
+
+  private hideIframe(iframe: HTMLIFrameElement): void {
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    iframe.style.zIndex = '1';
+    iframe.tabIndex = -1;
+    iframe.setAttribute('inert', '');
+    iframe.setAttribute('aria-hidden', 'true');
   }
 
   private detectDarkMode(): boolean {
