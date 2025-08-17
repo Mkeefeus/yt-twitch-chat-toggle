@@ -14,9 +14,6 @@ src/styles.css.map
 src/popup.css
 src/popup.css.map
 
-# Remove example folder
-example-scss/
-
 # Ignore temporary files
 *.tmp
 *.temp
