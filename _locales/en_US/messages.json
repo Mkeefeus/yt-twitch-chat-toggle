@@ -1,0 +1,10 @@
+{
+    "extension_name": {
+        "message": "Twitch Chat for YouTube",
+        "description": "The name of the extension"
+    },
+    "extension_description": {
+        "message": "A browser extension that adds Twitch chat to YouTube live streams.",
+        "description": "The description of the extension"
+    }
+}
