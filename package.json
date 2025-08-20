@@ -1,36 +1,22 @@
 {
   "name": "yt-twitch-chat-toggle",
-  "version": "1.0.0",
+  "private": true,
+  "version": "0.0.0",
   "type": "module",
-  "description": "Toggle between YouTube and Twitch chat on YouTube live streams",
-  "license": "MIT",
   "scripts": {
-    "build": "bun run clean && bun run compile-scss && bun run compile && bun run copy-assets && bun scripts/build.ts && bun run clean",
-    "package": "bun run build && bun ./scripts/package.ts",
-    "compile": "bun run tsc",
-    "compile-scss": "bun ./scripts/compile-scss.ts",
-    "copy-assets": "bun ./scripts/copy-assets.ts",
-    "watch": "bun run tsc --watch",
-    "watch-scss": "bun ./scripts/watch-scss.ts",
-    "dev": "bun run clean && bun run compile-scss && bun ./scripts/dev.ts",
-    "clean": "bun ./scripts/clean.ts",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "type-check": "tsc --noEmit",
-    "check": "bun run type-check && bun run lint"
+    "dev": "bunx --bun vite",
+    "build": "tsc -b && bunx --bun vite build",
+    "preview": "bunx --bun vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.12",
+    "@types/chrome": "^0.1.4",
+    "preact": "^10.27.0",
+    "tailwindcss": "^4.1.12"
   },
   "devDependencies": {
-    "@types/adm-zip": "^0.5.7",
-    "@types/bun": "^1.2.20",
-    "@types/chrome": "^0.0.246",
-    "@types/node": "^24.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.39.1",
-    "@typescript-eslint/parser": "^8.39.1",
-    "adm-zip": "^0.5.9",
-    "eslint": "^9.33.0",
-    "globals": "^16.3.0",
-    "sass": "^1.90.0",
-    "typescript": "^5.2.2"
-  },
-  "private": true
+    "@preact/preset-vite": "^2.10.2",
+    "typescript": "~5.8.3",
+    "vite": "^7.1.2"
+  }
 }
