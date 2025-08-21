@@ -6,5 +6,21 @@
   "extension_description": {
     "message": "Toggle chat visibility on YouTube and Twitch.",
     "description": "The description of the extension"
+  },
+  "settings_title": {
+    "message": "Settings",
+    "description": "The title of the settings page"
+  },
+  "settings_description": {
+    "message": "Configure your preferences here.",
+    "description": "The description of the settings page"
+  },
+  "storage_mode_toggle_title": {
+    "message": "Sync across devices",
+    "description": "The title of the storage mode toggle"
+  },
+  "storage_mode_toggle_description": {
+    "message": "Enable this to sync your settings across devices.",
+    "description": "The description of the storage mode toggle"
   }
 }
