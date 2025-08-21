@@ -1,24 +1,5 @@
-interface ChannelSettings {
-  twitchChannel: string;
-  preferredChat: 'youtube' | 'twitch';
-  lastUpdated: number;
-  created: number;
-}
-
-interface ExtensionSettings {
-  version: number;
-  channels: Record<string, ChannelSettings>;
-  lastUpdated: number;
-  preloadBothChats?: boolean;
-  theme: 'light' | 'dark' | 'system';
-}
-
-interface StorageMessageRequest {
-  action: 'switchStorageType';
-}
-
-const applyPrefix = (message: string) =>
-  `[${new Date().toISOString()}] [StorageWorker]: ${message}`;
+import { formatConsoleMessage } from '../helpers';
+import type { ExtensionSettings, MessageRequest, MessageResponse } from '../types';
 
 export class YoutubeTwitchChatStorageWorker {
   private storage?: chrome.storage.StorageArea;
@@ -31,12 +12,12 @@ export class YoutubeTwitchChatStorageWorker {
     await Promise.all([this.initializeDefaultSettings(), this.setupMessageListener()]);
     this.storage = await this.getStorageApi();
     this.setupStorageListener();
-    console.log(applyPrefix('Storage initialized'));
+    console.log(formatConsoleMessage('StorageWorker', 'Storage initialized'));
   }
 
   private async initializeDefaultSettings(): Promise<void> {
     try {
-      console.log(applyPrefix('Checking for existing settings'));
+      console.log(formatConsoleMessage('StorageWorker', 'Checking for existing settings'));
       // Check both storages to see if any settings exist
       const [localResult, syncResult] = await Promise.all([
         chrome.storage.local.get(this.STORAGE_KEY),
@@ -50,23 +31,34 @@ export class YoutubeTwitchChatStorageWorker {
 
       // Only initialize defaults if no settings exist anywhere
       if (hasLocalSettings || hasSyncSettings) {
-        console.log(applyPrefix('Existing settings found, skipping default initialization'));
+        console.log(
+          formatConsoleMessage(
+            'StorageWorker',
+            'Existing settings found, skipping default initialization'
+          )
+        );
         return;
       }
-      console.log(applyPrefix('No existing settings found, initializing defaults'));
+      console.log(
+        formatConsoleMessage('StorageWorker', 'No existing settings found, initializing defaults')
+      );
 
       const defaultSettings: ExtensionSettings = {
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
-        theme: 'system' // Default to system theme
+        theme: 'system', // Default to system theme
+        storageMode: 'local' // Default to local storage
       };
 
       // Save to local storage by default
       await chrome.storage.local.set({ [this.STORAGE_KEY]: defaultSettings });
-      console.log(applyPrefix('Default settings initialized'));
+      console.log(formatConsoleMessage('StorageWorker', 'Default settings initialized'));
     } catch (error) {
-      console.error(applyPrefix('Error initializing default settings:'), error);
+      console.error(
+        formatConsoleMessage('StorageWorker', 'Error initializing default settings:'),
+        error
+      );
     }
   }
 
@@ -78,17 +70,21 @@ export class YoutubeTwitchChatStorageWorker {
       const syncSettings = syncStorage[this.STORAGE_KEY] as ExtensionSettings | undefined;
 
       if (localSettings) {
-        console.log(applyPrefix('Using local storage'));
+        console.log(formatConsoleMessage('StorageWorker', 'Using local storage'));
         return chrome.storage.local;
       } else if (syncSettings) {
-        console.log(applyPrefix('Using sync storage'));
+        console.log(formatConsoleMessage('StorageWorker', 'Using sync storage'));
         return chrome.storage.sync;
       } else {
-        console.error(applyPrefix('No storage API found, using local storage'));
+        console.error(
+          formatConsoleMessage('StorageWorker', 'No storage API found, using local storage')
+        );
         return chrome.storage.local;
       }
     } catch (error) {
-      console.error(applyPrefix('yt-twitch-chat: Error getting storage API:'));
+      console.error(
+        formatConsoleMessage('StorageWorker', 'yt-twitch-chat: Error getting storage API:')
+      );
       return chrome.storage.local;
     }
   }
@@ -96,18 +92,73 @@ export class YoutubeTwitchChatStorageWorker {
   private setupMessageListener() {
     chrome.runtime.onMessage.addListener(
       (
-        message: StorageMessageRequest,
+        message: MessageRequest,
         _sender: chrome.runtime.MessageSender,
-        _sendResponse: (response?: Record<string, unknown>) => void
+        sendResponse: (response?: MessageResponse) => void
       ) => {
-        switch (message.action) {
-          case 'switchStorageType':
-            // this.handleSwitchStorageType();
-            console.log(applyPrefix(`Received request to switch storage type from: ${_sender}`));
-            break;
-        }
+        console.log(
+          formatConsoleMessage('StorageWorker', `Received message: ${JSON.stringify(message)}`)
+        );
+
+        // Handle async operations in a separate function
+        this.handleMessageAsync(message, _sender, sendResponse);
+
+        return true; // keeps the message channel open for async responses
       }
     );
+  }
+
+  private async handleMessageAsync(
+    message: MessageRequest,
+    _sender: chrome.runtime.MessageSender,
+    sendResponse: (response?: MessageResponse) => void
+  ) {
+    try {
+      switch (message.action) {
+        case 'switchStorageType':
+          console.log(
+            formatConsoleMessage(
+              'StorageWorker',
+              `Received request to switch storage type from: ${_sender.tab?.url || 'popup'}`
+            )
+          );
+          sendResponse({ success: true });
+          break;
+
+        case 'getSettings':
+          console.log(
+            formatConsoleMessage(
+              'StorageWorker',
+              `Received request to get settings from: ${_sender.tab?.url || 'popup'}`
+            )
+          );
+
+          const settings = await this.handleGetSettings();
+          if (!settings) {
+            console.error(formatConsoleMessage('StorageWorker', 'Failed to retrieve settings'));
+            sendResponse({
+              success: false,
+              data: undefined
+            });
+            return;
+          }
+          sendResponse({
+            success: true,
+            data: settings
+          });
+          break;
+
+        default:
+          console.warn(formatConsoleMessage('StorageWorker', `Unknown action: ${message.action}`));
+          sendResponse({ success: false });
+      }
+    } catch (error) {
+      console.error(formatConsoleMessage('StorageWorker', 'Error handling message'), error);
+      sendResponse({
+        success: false,
+        data: undefined
+      });
+    }
   }
 
   private setupStorageListener() {
@@ -116,9 +167,23 @@ export class YoutubeTwitchChatStorageWorker {
         return; // Ignore changes to lastUpdated
       }
       if (area === 'local' || area === 'sync') {
-        console.log(applyPrefix(`Storage changed in ${area}: ${JSON.stringify(changes)}`));
+        console.log(
+          formatConsoleMessage(
+            'StorageWorker',
+            `Storage changed in ${area}: ${JSON.stringify(changes)}`
+          )
+        );
       }
       this.storage?.set({ [this.STORAGE_KEY]: { lastUpdated: Date.now() } });
     });
+  }
+
+  private async handleGetSettings(): Promise<ExtensionSettings | undefined> {
+    const settings = await this.storage?.get([this.STORAGE_KEY]);
+    if (!settings || !settings[this.STORAGE_KEY]) {
+      console.warn(formatConsoleMessage('StorageWorker', 'No settings found'));
+      return;
+    }
+    return settings[this.STORAGE_KEY] as ExtensionSettings;
   }
 }
