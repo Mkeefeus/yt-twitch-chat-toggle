@@ -1,10 +1,10 @@
 {
-    "extension_name": {
-        "message": "YT Twitch Chat Toggle",
-        "description": "The name of the extension"
-    },
-    "extension_description": {
-        "message": "Toggle chat visibility on YouTube and Twitch.",
-        "description": "The description of the extension"
-    }
+  "extension_name": {
+    "message": "YT Twitch Chat Toggle",
+    "description": "The name of the extension"
+  },
+  "extension_description": {
+    "message": "Toggle chat visibility on YouTube and Twitch.",
+    "description": "The description of the extension"
+  }
 }

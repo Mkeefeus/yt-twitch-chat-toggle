@@ -2,7 +2,7 @@ export function ToggleSetting({
   title,
   description,
   enabled,
-  onChange,
+  onChange
 }: {
   title: string;
   description: string;
