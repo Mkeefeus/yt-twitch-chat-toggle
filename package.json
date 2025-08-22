@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bunx --bun vite",
+    "dev": "bunx --bun vite build --config vite.config.ts --watch",
     "build": "tsc -b && bunx --bun vite build --config vite.config.ts",
     "preview": "bunx --bun vite preview",
     "format": "bunx --bun prettier --write ."

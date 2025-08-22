@@ -1,5 +1,10 @@
 import { formatConsoleMessage } from '../helpers';
-import type { ExtensionSettings, MessageRequest, MessageResponse } from '../types';
+import {
+  MessageAction,
+  type ExtensionSettings,
+  type MessageRequest,
+  type MessageResponse
+} from '../types';
 
 export class YoutubeTwitchChatStorageWorker {
   private storage?: chrome.storage.StorageArea;
@@ -11,7 +16,6 @@ export class YoutubeTwitchChatStorageWorker {
   private async init() {
     await Promise.all([this.initializeDefaultSettings(), this.setupMessageListener()]);
     this.storage = await this.getStorageApi();
-    this.setupStorageListener();
     console.log(formatConsoleMessage('StorageWorker', 'Storage initialized'));
   }
 
@@ -47,8 +51,9 @@ export class YoutubeTwitchChatStorageWorker {
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
+        keepChatsLoaded: false,
         theme: 'system', // Default to system theme
-        storageMode: 'local' // Default to local storage
+        useSync: false // Default to local storage
       };
 
       // Save to local storage by default
@@ -115,17 +120,7 @@ export class YoutubeTwitchChatStorageWorker {
   ) {
     try {
       switch (message.action) {
-        case 'switchStorageType':
-          console.log(
-            formatConsoleMessage(
-              'StorageWorker',
-              `Received request to switch storage type from: ${_sender.tab?.url || 'popup'}`
-            )
-          );
-          sendResponse({ success: true });
-          break;
-
-        case 'getSettings':
+        case MessageAction.GET_SETTINGS:
           console.log(
             formatConsoleMessage(
               'StorageWorker',
@@ -147,7 +142,28 @@ export class YoutubeTwitchChatStorageWorker {
             data: settings
           });
           break;
-
+        case MessageAction.UPDATE_SETTINGS:
+          console.log(
+            formatConsoleMessage(
+              'StorageWorker',
+              `Received request to update settings from: ${_sender.tab?.url || 'popup'}`
+            )
+          );
+          if (!message.data) {
+            console.error(formatConsoleMessage('StorageWorker', 'No data provided for update'));
+            sendResponse({ success: false });
+            return;
+          }
+          const updateCompleted = await this.handleUpdateSettings(message.data);
+          if (!updateCompleted) {
+            console.error(formatConsoleMessage('StorageWorker', 'Failed to update settings'));
+          }
+          if (message.data.useSync !== undefined) {
+            this.handleMigrateStorage();
+          }
+          console.log(formatConsoleMessage('StorageWorker', 'Settings updated successfully'));
+          sendResponse({ success: updateCompleted });
+          break;
         default:
           console.warn(formatConsoleMessage('StorageWorker', `Unknown action: ${message.action}`));
           sendResponse({ success: false });
@@ -160,30 +176,46 @@ export class YoutubeTwitchChatStorageWorker {
       });
     }
   }
-
-  private setupStorageListener() {
-    chrome.storage.onChanged.addListener((changes, area) => {
-      if (changes[this.STORAGE_KEY]?.newValue?.lastUpdated) {
-        return; // Ignore changes to lastUpdated
-      }
-      if (area === 'local' || area === 'sync') {
-        console.log(
-          formatConsoleMessage(
-            'StorageWorker',
-            `Storage changed in ${area}: ${JSON.stringify(changes)}`
-          )
-        );
-      }
-      this.storage?.set({ [this.STORAGE_KEY]: { lastUpdated: Date.now() } });
-    });
-  }
-
   private async handleGetSettings(): Promise<ExtensionSettings | undefined> {
     const settings = await this.storage?.get([this.STORAGE_KEY]);
     if (!settings || !settings[this.STORAGE_KEY]) {
-      console.warn(formatConsoleMessage('StorageWorker', 'No settings found'));
+      console.error(formatConsoleMessage('StorageWorker', 'No settings found'));
       return;
     }
     return settings[this.STORAGE_KEY] as ExtensionSettings;
+  }
+
+  private async handleUpdateSettings(data: Partial<ExtensionSettings>): Promise<boolean> {
+    if (!data) return false;
+    const settings = await this.handleGetSettings();
+    if (!settings) return false;
+
+    const updatedSettings = { ...settings, ...data, lastUpdated: Date.now() };
+    await this.storage?.set({ [this.STORAGE_KEY]: updatedSettings });
+    return true;
+  }
+
+  private async handleMigrateStorage(): Promise<void> {
+    const settings = await this.handleGetSettings();
+    if (!settings) return;
+
+    try {
+      console.log(formatConsoleMessage('StorageWorker', 'Checking storage type for migration'));
+      const currentStorage = await this.getStorageApi();
+      if (currentStorage === chrome.storage.sync && !settings.useSync) {
+        console.log(formatConsoleMessage('StorageWorker', 'Migrating settings to local storage'));
+        // Migrate settings to local storage
+        await chrome.storage.local.set({ [this.STORAGE_KEY]: settings });
+        await chrome.storage.sync.remove([this.STORAGE_KEY]);
+      } else if (currentStorage === chrome.storage.local && settings.useSync) {
+        console.log(formatConsoleMessage('StorageWorker', 'Migrating settings to sync storage'));
+        // Migrate settings to sync storage
+        await chrome.storage.sync.set({ [this.STORAGE_KEY]: settings });
+        await chrome.storage.local.remove([this.STORAGE_KEY]);
+        this.storage = await this.getStorageApi();
+      }
+    } catch (error) {
+      console.error(formatConsoleMessage('StorageWorker', 'Error migrating storage: '), error);
+    }
   }
 }

@@ -1,20 +1,21 @@
 export enum MessageAction {
-  SWITCH_STORAGE_TYPE = 'switchStorageType',
-  GET_SETTINGS = 'getSettings'
+  GET_SETTINGS = 'getSettings',
+  UPDATE_SETTINGS = 'updateSettings'
 }
 
-enum StorageTypes {
-  LOCAL = 'local',
-  SYNC = 'sync'
-}
+export type MessageRequest<T extends MessageAction = MessageAction> = {
+  action: T;
+  data?: RequestData[T];
+};
 
-export type MessageRequest = {
-  action: MessageAction;
+type RequestData = {
+  [MessageAction.GET_SETTINGS]: undefined;
+  [MessageAction.UPDATE_SETTINGS]: Partial<ExtensionSettings>;
 };
 
 type ResponseData = {
   [MessageAction.GET_SETTINGS]: ExtensionSettings | undefined;
-  [MessageAction.SWITCH_STORAGE_TYPE]: StorageTypes;
+  [MessageAction.UPDATE_SETTINGS]: undefined;
 };
 
 export type MessageResponse<T extends MessageAction = MessageAction> = {
@@ -27,9 +28,9 @@ export interface ExtensionSettings {
   version: number;
   channels: Record<string, ChannelSettings>;
   lastUpdated: number;
-  preloadBothChats?: boolean;
+  keepChatsLoaded: boolean;
   theme: 'light' | 'dark' | 'system';
-  storageMode: 'local' | 'sync';
+  useSync: boolean;
 }
 
 export interface ChannelSettings {

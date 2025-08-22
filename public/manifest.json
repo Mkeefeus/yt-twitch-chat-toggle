@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Twitch Chat for YouTube",
+  "name": "__MSG_extension_name__",
   "version": "1.0.0",
-  "description": "Integrate Twitch chat into YouTube live streams.",
+  "description": "__MSG_extension_description__",
   "permissions": [
     "scripting",
     "activeTab",

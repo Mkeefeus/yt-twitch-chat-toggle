@@ -2,9 +2,10 @@ import { useState } from 'preact/hooks';
 import { getLocaleMessage } from '../helpers';
 import { ToggleSetting } from '../components/ToggleSetting';
 
+const POPUP_TITLE = getLocaleMessage('popup_title');
+const POPUP_DESCRIPTION = getLocaleMessage('popup_description');
+
 export function Popup({ handleNavigation }: { handleNavigation: (route: string) => void }) {
-  const [title] = useState(getLocaleMessage('extension_name'));
-  const [description] = useState(getLocaleMessage('extension_description'));
   const [channel, setChannel] = useState('');
   const [twitchChatEnabled, setTwitchChatEnabled] = useState(false);
 
@@ -16,8 +17,8 @@ export function Popup({ handleNavigation }: { handleNavigation: (route: string) 
 
   return (
     <>
-      <h1 class="text-2xl font-bold">{title}</h1>
-      <p class="mt-2">{description}</p>
+      <h1 class="text-2xl font-bold">{POPUP_TITLE}</h1>
+      <p class="mt-2">{POPUP_DESCRIPTION}</p>
       <div class="flex justify-between mt-4">
         <input
           type="text"
@@ -31,8 +32,8 @@ export function Popup({ handleNavigation }: { handleNavigation: (route: string) 
       </div>
       {channel ? (
         <ToggleSetting
-          title="Use Twitch Chat"
-          description="Enable or disable Twitch chat integration"
+          title={getLocaleMessage('use_twitch_chat_title')}
+          description={getLocaleMessage('use_twitch_chat_description')}
           enabled={twitchChatEnabled}
           onChange={() => {
             setTwitchChatEnabled(!twitchChatEnabled);

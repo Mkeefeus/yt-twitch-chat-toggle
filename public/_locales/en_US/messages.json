@@ -7,6 +7,10 @@
     "message": "Toggle chat visibility on YouTube and Twitch.",
     "description": "The description of the extension"
   },
+  "use_twitch_chat_title": {
+    "message": "Use Twitch Chat",
+    "description": "The title of the use Twitch chat toggle"
+  },
   "settings_title": {
     "message": "Settings",
     "description": "The title of the settings page"
@@ -22,5 +26,13 @@
   "storage_mode_toggle_description": {
     "message": "Enable this to sync your settings across devices.",
     "description": "The description of the storage mode toggle"
+  },
+  "keep_chats_loaded_title": {
+    "message": "Keep chats loaded",
+    "description": "The title of the keep chats loaded toggle"
+  },
+  "keep_chats_loaded_description": {
+    "message": "Enable this to keep both chats loaded for seamless switching.",
+    "description": "The description of the keep chats loaded toggle"
   }
 }

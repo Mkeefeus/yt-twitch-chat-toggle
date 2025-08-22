@@ -3,12 +3,13 @@ import { ToggleSetting } from '../components/ToggleSetting';
 import { MessageAction, type ExtensionSettings, type MessageResponse } from '../types';
 import { useEffect, useState } from 'preact/hooks';
 
+// These are evaluated once when the module loads
+const SETTINGS_TITLE = getLocaleMessage('settings_title');
+const SETTINGS_DESCRIPTION = getLocaleMessage('settings_description');
+
 export function Settings({ handleNavigation }: { handleNavigation: (route: string) => void }) {
-  const title = getLocaleMessage('settings_title');
-  const description = getLocaleMessage('settings_description');
-  console.log(formatConsoleMessage('yt-twitch-chat-settings', 'Rendering Settings component'));
-  // const storageMode = 'local'; //update this to get from serviceworker
   const [settings, setSettings] = useState<ExtensionSettings | undefined>(undefined);
+
   useEffect(() => {
     const fetchSettings = async () => {
       console.log(
@@ -27,19 +28,32 @@ export function Settings({ handleNavigation }: { handleNavigation: (route: strin
     };
     fetchSettings();
   }, []);
-  const toggleStorageMode = () => {
-    // Update the storage mode setting
+
+  const toggleSetting = (key: keyof ExtensionSettings) => {
+    if (!settings) return;
+    const newValue = !settings[key];
+    setSettings({ ...settings, [key]: newValue });
+    chrome.runtime.sendMessage({
+      action: MessageAction.UPDATE_SETTINGS,
+      data: { [key]: newValue }
+    });
   };
 
   return (
     <div>
-      <h1 class="text-2xl font-bold">{title}</h1>
-      <p class="mt-2">{description}</p>
+      <h1 class="text-2xl font-bold">{SETTINGS_TITLE}</h1>
+      <p class="mt-2">{SETTINGS_DESCRIPTION}</p>
       <ToggleSetting
         title={getLocaleMessage('storage_mode_toggle_title')}
         description={getLocaleMessage('storage_mode_toggle_description')}
-        enabled={settings?.storageMode !== 'local'}
-        onChange={toggleStorageMode}
+        enabled={settings?.useSync || false}
+        onChange={() => toggleSetting('useSync')}
+      />
+      <ToggleSetting
+        title={getLocaleMessage('keep_chats_loaded_title')}
+        description={getLocaleMessage('keep_chats_loaded_description')}
+        enabled={settings?.keepChatsLoaded || false}
+        onChange={() => toggleSetting('keepChatsLoaded')}
       />
       <button
         class="mt-4 w-full bg-gray-200 text-gray-800 rounded-lg px-4 py-2 hover:bg-gray-300"
