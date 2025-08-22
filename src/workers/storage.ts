@@ -47,12 +47,13 @@ export class YoutubeTwitchChatStorageWorker {
         formatConsoleMessage('StorageWorker', 'No existing settings found, initializing defaults')
       );
 
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const defaultSettings: ExtensionSettings = {
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
         keepChatsLoaded: false,
-        theme: 'system', // Default to system theme
+        darkMode: prefersDark,
         useSync: false // Default to local storage
       };
 

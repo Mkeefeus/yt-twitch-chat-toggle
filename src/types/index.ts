@@ -29,7 +29,7 @@ export interface ExtensionSettings {
   channels: Record<string, ChannelSettings>;
   lastUpdated: number;
   keepChatsLoaded: boolean;
-  theme: 'light' | 'dark' | 'system';
+  darkMode: boolean;
   useSync: boolean;
 }
 
