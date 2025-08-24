@@ -23,13 +23,15 @@ export type MessageResponse<T extends MessageAction = MessageAction> = {
   data?: ResponseData[T];
 };
 
+export type Themes = 'light' | 'dark' | 'system';
+
 // These could be interfaces if you plan to extend them
 export interface ExtensionSettings {
   version: number;
   channels: Record<string, ChannelSettings>;
   lastUpdated: number;
   keepChatsLoaded: boolean;
-  darkMode: boolean;
+  theme: Themes;
   useSync: boolean;
 }
 

@@ -7,7 +7,6 @@ import {
 } from '../types';
 
 export class YoutubeTwitchChatStorageWorker {
-  private storage?: chrome.storage.StorageArea;
   private STORAGE_KEY: string = 'yt_twitch_chat_settings';
   constructor() {
     this.init();
@@ -15,7 +14,6 @@ export class YoutubeTwitchChatStorageWorker {
 
   private async init() {
     await Promise.all([this.initializeDefaultSettings(), this.setupMessageListener()]);
-    this.storage = await this.getStorageApi();
     console.log(formatConsoleMessage('StorageWorker', 'Storage initialized'));
   }
 
@@ -29,9 +27,13 @@ export class YoutubeTwitchChatStorageWorker {
       ]);
 
       const hasLocalSettings =
-        localResult[this.STORAGE_KEY] && Object.keys(localResult[this.STORAGE_KEY]).length > 0;
+        localResult &&
+        localResult[this.STORAGE_KEY] &&
+        Object.keys(localResult[this.STORAGE_KEY]).length > 0;
       const hasSyncSettings =
-        syncResult[this.STORAGE_KEY] && Object.keys(syncResult[this.STORAGE_KEY]).length > 0;
+        syncResult &&
+        syncResult[this.STORAGE_KEY] &&
+        Object.keys(syncResult[this.STORAGE_KEY]).length > 0;
 
       // Only initialize defaults if no settings exist anywhere
       if (hasLocalSettings || hasSyncSettings) {
@@ -47,13 +49,12 @@ export class YoutubeTwitchChatStorageWorker {
         formatConsoleMessage('StorageWorker', 'No existing settings found, initializing defaults')
       );
 
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const defaultSettings: ExtensionSettings = {
         version: 1,
         channels: {},
         lastUpdated: Date.now(),
         keepChatsLoaded: false,
-        darkMode: prefersDark,
+        theme: 'system',
         useSync: false // Default to local storage
       };
 
@@ -82,7 +83,7 @@ export class YoutubeTwitchChatStorageWorker {
         console.log(formatConsoleMessage('StorageWorker', 'Using sync storage'));
         return chrome.storage.sync;
       } else {
-        console.error(
+        console.log(
           formatConsoleMessage('StorageWorker', 'No storage API found, using local storage')
         );
         return chrome.storage.local;
@@ -178,9 +179,10 @@ export class YoutubeTwitchChatStorageWorker {
     }
   }
   private async handleGetSettings(): Promise<ExtensionSettings | undefined> {
-    const settings = await this.storage?.get([this.STORAGE_KEY]);
+    const storage = await this.getStorageApi();
+    const settings = await storage.get([this.STORAGE_KEY]);
     if (!settings || !settings[this.STORAGE_KEY]) {
-      console.error(formatConsoleMessage('StorageWorker', 'No settings found'));
+      console.error(formatConsoleMessage('StorageWorker', 'No settings found: '), settings);
       return;
     }
     return settings[this.STORAGE_KEY] as ExtensionSettings;
@@ -192,7 +194,8 @@ export class YoutubeTwitchChatStorageWorker {
     if (!settings) return false;
 
     const updatedSettings = { ...settings, ...data, lastUpdated: Date.now() };
-    await this.storage?.set({ [this.STORAGE_KEY]: updatedSettings });
+    const storage = await this.getStorageApi();
+    await storage.set({ [this.STORAGE_KEY]: updatedSettings });
     return true;
   }
 
@@ -205,16 +208,14 @@ export class YoutubeTwitchChatStorageWorker {
       const currentStorage = await this.getStorageApi();
       if (currentStorage === chrome.storage.sync && !settings.useSync) {
         console.log(formatConsoleMessage('StorageWorker', 'Migrating settings to local storage'));
-        // Migrate settings to local storage
         await chrome.storage.local.set({ [this.STORAGE_KEY]: settings });
         await chrome.storage.sync.remove([this.STORAGE_KEY]);
       } else if (currentStorage === chrome.storage.local && settings.useSync) {
         console.log(formatConsoleMessage('StorageWorker', 'Migrating settings to sync storage'));
-        // Migrate settings to sync storage
         await chrome.storage.sync.set({ [this.STORAGE_KEY]: settings });
         await chrome.storage.local.remove([this.STORAGE_KEY]);
-        this.storage = await this.getStorageApi();
       }
+      console.log(formatConsoleMessage('StorageWorker', 'Storage migration completed'));
     } catch (error) {
       console.error(formatConsoleMessage('StorageWorker', 'Error migrating storage: '), error);
     }

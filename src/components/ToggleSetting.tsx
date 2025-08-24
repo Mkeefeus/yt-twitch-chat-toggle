@@ -16,8 +16,8 @@ export function ToggleSetting({
   return (
     <div class="flex items-center justify-between py-2">
       <div class="flex flex-col">
-        <span class="font-medium text-gray-900">{title}</span>
-        <span class="text-sm text-gray-500">{description}</span>
+        <span class="font-medium text-primary">{title}</span>
+        <span class="text-sm text-secondary">{description}</span>
       </div>
       <label class="relative inline-flex items-center cursor-pointer">
         <input type="checkbox" checked={enabled} onChange={handleChange} class="sr-only peer" />

@@ -1,3 +1,3 @@
-import { YoutubeTwitchChatStorageWorker } from "./workers/storage";
+import { YoutubeTwitchChatStorageWorker } from './workers/storage';
 
 new YoutubeTwitchChatStorageWorker();

@@ -2,8 +2,8 @@ import { useState } from 'preact/hooks';
 import { getLocaleMessage } from '../helpers';
 import { ToggleSetting } from '../components/ToggleSetting';
 
-const POPUP_TITLE = getLocaleMessage('popup_title');
-const POPUP_DESCRIPTION = getLocaleMessage('popup_description');
+const POPUP_TITLE = getLocaleMessage('extension_name');
+const POPUP_DESCRIPTION = getLocaleMessage('extension_description');
 
 export function Popup({ handleNavigation }: { handleNavigation: (route: string) => void }) {
   const [channel, setChannel] = useState('');
@@ -17,17 +17,17 @@ export function Popup({ handleNavigation }: { handleNavigation: (route: string) 
 
   return (
     <>
-      <h1 class="text-2xl font-bold">{POPUP_TITLE}</h1>
-      <p class="mt-2">{POPUP_DESCRIPTION}</p>
+      <h1 class="text-2xl font-bold text-primary">{POPUP_TITLE}</h1>
+      <p class="mt-2 text-secondary">{POPUP_DESCRIPTION}</p>
       <div class="flex justify-between mt-4">
         <input
           type="text"
           id="twitch-channel"
-          class="border border-gray-300 rounded-lg p-2 flex-1"
+          class="border border-gray-300 rounded-lg p-2 flex-1 bg-primary text-primary"
           placeholder="Twitch Channel"
         />
         <button class="ml-2 flex-shrink-0 bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600">
-          Auto
+          🔁 Auto
         </button>
       </div>
       {channel ? (
@@ -44,14 +44,14 @@ export function Popup({ handleNavigation }: { handleNavigation: (route: string) 
           class="mt-4 w-full bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600"
           onClick={handleSaveChannel}
         >
-          Save
+          💾 Save
         </button>
       )}
       <button
-        class="mt-4 w-full bg-gray-200 text-gray-800 rounded-lg px-4 py-2 hover:bg-gray-300"
+        class="mt-4 w-full nav-button rounded-lg px-4 py-2"
         onClick={() => handleNavigation('settings')}
       >
-        Settings
+        ⚙️ Settings
       </button>
     </>
   );

@@ -4,10 +4,7 @@ import preact from '@preact/preset-vite';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [
-    preact(),
-    tailwindcss()
-  ],
+  plugins: [preact(), tailwindcss()],
   build: {
     rollupOptions: {
       input: {
