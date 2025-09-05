@@ -4,13 +4,20 @@
     "target": "ES2022",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "skipLibCheck": true,
     "paths": {
-      "react": ["./node_modules/preact/compat/"],
-      "react-dom": ["./node_modules/preact/compat/"]
+      "react": [
+        "./node_modules/react/compat/"
+      ],
+      "react-dom": [
+        "./node_modules/react/compat/"
+      ]
     },
-
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
@@ -18,15 +25,18 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "jsxImportSource": "preact",
-
+    "jsxImportSource": "react",
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "types": ["chrome"]
+    "types": [
+      "chrome"
+    ]
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

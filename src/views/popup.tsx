@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 import { getLocaleMessage } from '../helpers';
 import { ToggleSetting } from '../components/ToggleSetting';
 
@@ -17,16 +17,16 @@ export function Popup({ handleNavigation }: { handleNavigation: (route: string) 
 
   return (
     <>
-      <h1 class="text-2xl font-bold text-primary">{POPUP_TITLE}</h1>
-      <p class="mt-2 text-secondary">{POPUP_DESCRIPTION}</p>
-      <div class="flex justify-between mt-4">
+      <h1 className="text-2xl font-bold text-primary">{POPUP_TITLE}</h1>
+      <p className="mt-2 text-secondary">{POPUP_DESCRIPTION}</p>
+      <div className="flex justify-between mt-4">
         <input
           type="text"
           id="twitch-channel"
-          class="border border-gray-300 rounded-lg p-2 flex-1 bg-primary text-primary"
+          className="border border-gray-300 rounded-lg p-2 flex-1 bg-primary text-primary"
           placeholder="Twitch Channel"
         />
-        <button class="ml-2 flex-shrink-0 bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600">
+        <button className="ml-2 flex-shrink-0 bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600">
           🔁 Auto
         </button>
       </div>
@@ -41,14 +41,14 @@ export function Popup({ handleNavigation }: { handleNavigation: (route: string) 
         />
       ) : (
         <button
-          class="mt-4 w-full bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600"
+          className="mt-4 w-full bg-blue-500 text-white rounded-lg px-4 py-2 hover:bg-blue-600"
           onClick={handleSaveChannel}
         >
           💾 Save
         </button>
       )}
       <button
-        class="mt-4 w-full nav-button rounded-lg px-4 py-2"
+        className="mt-4 w-full nav-button rounded-lg px-4 py-2"
         onClick={() => handleNavigation('settings')}
       >
         ⚙️ Settings

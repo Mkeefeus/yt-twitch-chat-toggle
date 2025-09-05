@@ -1,7 +1,7 @@
 import { formatConsoleMessage, getLocaleMessage } from '../helpers';
 import { ToggleSetting } from '../components/ToggleSetting';
 import { MessageAction, type ExtensionSettings, type MessageResponse } from '../types';
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState } from 'react';
 import { ThemeSetting } from '../components/ThemeSetting';
 
 // These are evaluated once when the module loads
@@ -42,8 +42,8 @@ export function Settings({ handleNavigation }: { handleNavigation: (route: strin
 
   return (
     <div>
-      <h1 class="text-2xl font-bold text-primary">{SETTINGS_TITLE}</h1>
-      <p class="mt-2 text-secondary">{SETTINGS_DESCRIPTION}</p>
+      <h1 className="text-2xl font-bold text-primary">{SETTINGS_TITLE}</h1>
+      <p className="mt-2 text-secondary">{SETTINGS_DESCRIPTION}</p>
       <ToggleSetting
         title={getLocaleMessage('storage_mode_toggle_title')}
         description={getLocaleMessage('storage_mode_toggle_description')}
@@ -58,7 +58,7 @@ export function Settings({ handleNavigation }: { handleNavigation: (route: strin
       />
       <ThemeSetting />
       <button
-        class="mt-4 w-full nav-button rounded-lg px-4 py-2"
+        className="mt-4 w-full nav-button rounded-lg px-4 py-2"
         onClick={() => handleNavigation('settings')}
       >
         {'<- Back'}

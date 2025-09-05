@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState } from 'react';
 import { useTheme } from '../hooks/useTheme';
 import type { Themes } from '../types';
 
@@ -66,18 +66,18 @@ export function ThemeSetting() {
   };
 
   return (
-    <div class="flex items-center justify-between py-2">
-      <div class="flex flex-col">
-        <span class="font-medium text-primary">Theme</span>
-        <span class="text-sm text-secondary">Color scheme</span>
+    <div className="flex items-center justify-between py-2">
+      <div className="flex flex-col">
+        <span className="font-medium text-primary">Theme</span>
+        <span className="text-sm text-secondary">Color scheme</span>
       </div>
-      <div class={containerClasses}>
+      <div className={containerClasses}>
         {themeOptions.map((option) => (
           <button
             key={option.value}
             onClick={() => handleThemeChange(option.value as Themes)}
             title={option.title}
-            class={getButtonClasses(option.value)}
+            className={getButtonClasses(option.value)}
           >
             {option.label}
           </button>

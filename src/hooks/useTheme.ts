@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useState } from 'react';
 import { MessageAction, type MessageRequest, type MessageResponse, type Themes } from '../types';
 
 export function useTheme() {
