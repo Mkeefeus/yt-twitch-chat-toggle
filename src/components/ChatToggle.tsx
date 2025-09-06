@@ -1,58 +1,57 @@
-interface ChatToggleProps {
-  isEnabled: boolean;
-  preferredChat: 'youtube' | 'twitch';
-  onToggle: () => void;
-}
+import { useState } from 'preact/hooks';
+import '../tailwind.css';
 
-export function ChatToggle({ isEnabled, preferredChat, onToggle }: ChatToggleProps) {
-  const isYouTube = preferredChat === 'youtube';
+const YouTubeIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+  </svg>
+);
+
+const TwitchIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
+  </svg>
+);
+
+export function ChatToggle() {
+  const [isOn, setIsOn] = useState(false);
+  const [preferredChat, setPreferredChat] = useState<'youtube' | 'twitch'>('youtube');
+
+  const onToggle = () => {
+    setPreferredChat(preferredChat === 'youtube' ? 'twitch' : 'youtube');
+  };
+
+  const handleToggle = () => {
+    setIsOn(!isOn);
+    onToggle();
+  };
 
   return (
-    <button
-      className="ytp-button flex items-center justify-center p-2 hover:bg-white/10 rounded transition-colors"
-      onClick={onToggle}
-      title={`Switch to ${isYouTube ? 'Twitch' : 'YouTube'} chat`}
-      aria-label={`Currently using ${preferredChat} chat. Click to switch to ${isYouTube ? 'Twitch' : 'YouTube'} chat.`}
+    <div
+      onClick={handleToggle}
+      className="flex items-center justify-center p-2 cursor-pointer text-white hover:bg-white/10 rounded relative"
     >
-      <div className="relative flex items-center bg-white/10 rounded-full p-1 w-14 h-7 transition-colors">
-        {/* YouTube label */}
-        <span
-          className={`absolute left-1.5 text-xs font-bold transition-colors z-10 ${
-            isYouTube ? 'text-red-400' : 'text-white/60'
-          }`}
-        >
-          YT
-        </span>
-
-        {/* Sliding indicator */}
-        <div
-          className={`absolute w-5 h-5 rounded-full transition-all duration-300 ease-in-out ${
-            isYouTube
-              ? 'translate-x-0 bg-red-500 shadow-lg shadow-red-500/25'
-              : 'translate-x-7 bg-purple-500 shadow-lg shadow-purple-500/25'
-          }`}
-        />
-
-        {/* Twitch label */}
-        <span
-          className={`absolute right-1.5 text-xs font-bold transition-colors z-10 ${
-            !isYouTube ? 'text-purple-400' : 'text-white/60'
-          }`}
-        >
-          TW
-        </span>
+      {/* YouTube Icon */}
+      <div
+        className={`absolute transition-all duration-300 ease-in-out ${
+          preferredChat === 'youtube'
+            ? 'opacity-100 scale-100 rotate-0'
+            : 'opacity-0 scale-75 rotate-45'
+        }`}
+      >
+        <YouTubeIcon />
       </div>
 
-      {/* Optional status indicator */}
-      {isEnabled && (
-        <div className="ml-1">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              isYouTube ? 'bg-red-400' : 'bg-purple-400'
-            } animate-pulse`}
-          />
-        </div>
-      )}
-    </button>
+      {/* Twitch Icon */}
+      <div
+        className={`absolute transition-all duration-300 ease-in-out ${
+          preferredChat === 'twitch'
+            ? 'opacity-100 scale-100 rotate-0'
+            : 'opacity-0 scale-75 -rotate-45'
+        }`}
+      >
+        <TwitchIcon />
+      </div>
+    </div>
   );
 }

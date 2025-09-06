@@ -1,42 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'preact/hooks';
 import { Popup } from './views/popup.tsx';
 import { Settings } from './views/settings.tsx';
-import './tailwind.css';
 import { Cover } from './views/cover.tsx';
 import { useTheme } from './hooks/useTheme';
+import { isValidYouTubeLivePage } from './helpers/validPage';
 
+// Use new helper for page validation
 const ValidateCurrentPage = async (): Promise<boolean> => {
-  try {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab?.url || !tab.url.includes('youtube.com/watch')) return false;
-
-    // Check if it's a live stream by injecting a content script
-    const results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id! },
-      func: () => {
-        // Check for live stream indicators
-        const liveIndicators = [
-          '.ytp-live-badge',
-          '[aria-label*="live"]',
-          '.ytp-chrome-live',
-          '.live-badge'
-        ];
-
-        return liveIndicators.some((selector) => document.querySelector(selector) !== null);
-      }
-    });
-
-    return results[0]?.result || false;
-  } catch (error) {
-    console.error('Error checking for live stream:', error);
-    // Fallback to just checking if it's a YouTube watch page
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      return tab?.url?.includes('youtube.com/watch') || false;
-    } catch {
-      return false;
-    }
-  }
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.url) return false;
+  // Run the helper in the tab context
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id! },
+    func: isValidYouTubeLivePage
+  });
+  return results[0]?.result || false;
 };
 
 export const App = () => {

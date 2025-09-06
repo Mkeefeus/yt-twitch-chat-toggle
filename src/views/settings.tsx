@@ -1,7 +1,7 @@
 import { formatConsoleMessage, getLocaleMessage } from '../helpers';
 import { ToggleSetting } from '../components/ToggleSetting';
 import { MessageAction, type ExtensionSettings, type MessageResponse } from '../types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'preact/hooks';
 import { ThemeSetting } from '../components/ThemeSetting';
 
 // These are evaluated once when the module loads

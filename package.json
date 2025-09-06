@@ -4,30 +4,21 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bunx --bun vite build --config vite.config.ts --watch",
-    "build": "tsc -b && bunx --bun vite build --config vite.config.ts",
-    "preview": "bunx --bun vite preview",
+    "build:main": "tsc -b && bunx --bun vite build --config vite.config.ts",
+    "build:content": "bunx --bun vite build --config vite.config.content.ts",
+    "build": "bun run build:main && bun run build:content",
     "format": "bunx --bun prettier --write ."
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.12",
-    "@types/chrome": "^0.1.4",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
+    "preact": "^10.27.1",
     "tailwindcss": "^4.1.12"
   },
   "devDependencies": {
-    "@eslint/js": "^9.35.0",
-    "@types/react": "^19.1.12",
-    "@types/react-dom": "^19.1.9",
-    "@vitejs/plugin-react-swc": "^4.0.1",
-    "eslint": "^9.35.0",
-    "eslint-plugin-react-hooks": "^5.2.0",
-    "eslint-plugin-react-refresh": "^0.4.20",
-    "globals": "^16.3.0",
+    "@preact/preset-vite": "^2.10.2",
+    "@types/chrome": "^0.1.6",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
-    "typescript-eslint": "^8.42.0",
     "vite": "^7.1.4"
   }
 }

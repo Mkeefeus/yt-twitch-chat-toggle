@@ -10,8 +10,7 @@ export function ToggleSetting({
   onChange: (enabled: boolean) => void;
 }) {
   const handleChange = (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    onChange(target.checked);
+    onChange((e.target as HTMLInputElement).checked);
   };
   return (
     <div className="flex items-center justify-between py-2">

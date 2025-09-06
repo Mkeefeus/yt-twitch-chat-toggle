@@ -1,4 +1,3 @@
-// vite.config.popup.js
 import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 import preact from '@preact/preset-vite';
@@ -8,16 +7,15 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        popup: 'popup.html',
-        serviceworker: 'src/serviceworker.ts'
+        content: 'src/content.tsx',
       },
       output: {
-        entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
-        assetFileNames: '[name].[ext]',
-        format: 'es'
+        entryFileNames: 'content.js',
+        format: 'iife',
+        assetFileNames: '[name].[ext]'
       }
     },
+    emptyOutDir: false,
     sourcemap: true,
     outDir: 'dist'
   }

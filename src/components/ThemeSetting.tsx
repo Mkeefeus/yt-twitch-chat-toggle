@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'preact/hooks';
 import { useTheme } from '../hooks/useTheme';
 import type { Themes } from '../types';
 
