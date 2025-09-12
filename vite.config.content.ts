@@ -1,13 +1,10 @@
 import { defineConfig } from 'vite';
-import tailwindcss from '@tailwindcss/vite';
-import preact from '@preact/preset-vite';
 
 export default defineConfig({
-  plugins: [preact(), tailwindcss()],
   build: {
     rollupOptions: {
       input: {
-        content: 'src/content.tsx',
+        content: 'src/content.ts',
       },
       output: {
         entryFileNames: 'content.js',

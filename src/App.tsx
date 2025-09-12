@@ -3,7 +3,7 @@ import { Popup } from './views/popup.tsx';
 import { Settings } from './views/settings.tsx';
 import { Cover } from './views/cover.tsx';
 import { useTheme } from './hooks/useTheme';
-import { isValidYouTubeLivePage } from './helpers/validPage';
+import { isValidYouTubeLivePage } from './helpers';
 
 // Use new helper for page validation
 const ValidateCurrentPage = async (): Promise<boolean> => {

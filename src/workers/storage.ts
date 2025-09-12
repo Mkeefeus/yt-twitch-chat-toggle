@@ -1,19 +1,18 @@
 import { formatConsoleMessage } from '../helpers';
 import {
-  MessageAction,
-  type ExtensionSettings,
-  type MessageRequest,
-  type MessageResponse
+  type ChannelSettings,
+  type ExtensionSettings
 } from '../types';
 
 export class YoutubeTwitchChatStorageWorker {
   private STORAGE_KEY: string = 'yt_twitch_chat_settings';
+
   constructor() {
     this.init();
   }
 
   private async init() {
-    await Promise.all([this.initializeDefaultSettings(), this.setupMessageListener()]);
+    await this.initializeDefaultSettings();
     console.log(formatConsoleMessage('StorageWorker', 'Storage initialized'));
   }
 
@@ -77,10 +76,8 @@ export class YoutubeTwitchChatStorageWorker {
       const syncSettings = syncStorage[this.STORAGE_KEY] as ExtensionSettings | undefined;
 
       if (localSettings) {
-        console.log(formatConsoleMessage('StorageWorker', 'Using local storage'));
         return chrome.storage.local;
       } else if (syncSettings) {
-        console.log(formatConsoleMessage('StorageWorker', 'Using sync storage'));
         return chrome.storage.sync;
       } else {
         console.log(
@@ -96,89 +93,7 @@ export class YoutubeTwitchChatStorageWorker {
     }
   }
 
-  private setupMessageListener() {
-    chrome.runtime.onMessage.addListener(
-      (
-        message: MessageRequest,
-        _sender: chrome.runtime.MessageSender,
-        sendResponse: (response?: MessageResponse) => void
-      ) => {
-        console.log(
-          formatConsoleMessage('StorageWorker', `Received message: ${JSON.stringify(message)}`)
-        );
-
-        // Handle async operations in a separate function
-        this.handleMessageAsync(message, _sender, sendResponse);
-
-        return true; // keeps the message channel open for async responses
-      }
-    );
-  }
-
-  private async handleMessageAsync(
-    message: MessageRequest,
-    _sender: chrome.runtime.MessageSender,
-    sendResponse: (response?: MessageResponse) => void
-  ) {
-    try {
-      switch (message.action) {
-        case MessageAction.GET_SETTINGS:
-          console.log(
-            formatConsoleMessage(
-              'StorageWorker',
-              `Received request to get settings from: ${_sender.tab?.url || 'popup'}`
-            )
-          );
-
-          const settings = await this.handleGetSettings();
-          if (!settings) {
-            console.error(formatConsoleMessage('StorageWorker', 'Failed to retrieve settings'));
-            sendResponse({
-              success: false,
-              data: undefined
-            });
-            return;
-          }
-          sendResponse({
-            success: true,
-            data: settings
-          });
-          break;
-        case MessageAction.UPDATE_SETTINGS:
-          console.log(
-            formatConsoleMessage(
-              'StorageWorker',
-              `Received request to update settings from: ${_sender.tab?.url || 'popup'}`
-            )
-          );
-          if (!message.data) {
-            console.error(formatConsoleMessage('StorageWorker', 'No data provided for update'));
-            sendResponse({ success: false });
-            return;
-          }
-          const updateCompleted = await this.handleUpdateSettings(message.data);
-          if (!updateCompleted) {
-            console.error(formatConsoleMessage('StorageWorker', 'Failed to update settings'));
-          }
-          if (message.data.useSync !== undefined) {
-            this.handleMigrateStorage();
-          }
-          console.log(formatConsoleMessage('StorageWorker', 'Settings updated successfully'));
-          sendResponse({ success: updateCompleted });
-          break;
-        default:
-          console.warn(formatConsoleMessage('StorageWorker', `Unknown action: ${message.action}`));
-          sendResponse({ success: false });
-      }
-    } catch (error) {
-      console.error(formatConsoleMessage('StorageWorker', 'Error handling message'), error);
-      sendResponse({
-        success: false,
-        data: undefined
-      });
-    }
-  }
-  private async handleGetSettings(): Promise<ExtensionSettings | undefined> {
+  public async getSettings(): Promise<ExtensionSettings | undefined> {
     const storage = await this.getStorageApi();
     const settings = await storage.get([this.STORAGE_KEY]);
     if (!settings || !settings[this.STORAGE_KEY]) {
@@ -188,9 +103,9 @@ export class YoutubeTwitchChatStorageWorker {
     return settings[this.STORAGE_KEY] as ExtensionSettings;
   }
 
-  private async handleUpdateSettings(data: Partial<ExtensionSettings>): Promise<boolean> {
+  public async updateSettings(data: Partial<ExtensionSettings>): Promise<boolean> {
     if (!data) return false;
-    const settings = await this.handleGetSettings();
+    const settings = await this.getSettings();
     if (!settings) return false;
 
     const updatedSettings = { ...settings, ...data, lastUpdated: Date.now() };
@@ -199,8 +114,8 @@ export class YoutubeTwitchChatStorageWorker {
     return true;
   }
 
-  private async handleMigrateStorage(): Promise<void> {
-    const settings = await this.handleGetSettings();
+  public async migrateStorage(): Promise<void> {
+    const settings = await this.getSettings();
     if (!settings) return;
 
     try {
@@ -219,5 +134,44 @@ export class YoutubeTwitchChatStorageWorker {
     } catch (error) {
       console.error(formatConsoleMessage('StorageWorker', 'Error migrating storage: '), error);
     }
+  }
+
+  public async getChannelSettings(channelId: string): Promise<ChannelSettings | undefined> {
+    if (!channelId) return;
+    const settings = await this.getSettings();
+    if (!settings) return;
+
+    return settings.channels[channelId];
+  }
+
+  public async updateChannelSettings(
+    channelId: string,
+    data: Partial<ChannelSettings>
+  ): Promise<boolean> {
+    if (!channelId || !data) return false;
+    const settings = await this.getSettings();
+    if (!settings) return false;
+
+    const existingChannelSettings = settings.channels[channelId] || {};
+    const updatedChannelSettings: ChannelSettings = { ...existingChannelSettings, ...data };
+    const updatedChannels: ExtensionSettings['channels'] = {
+      ...settings.channels,
+      [channelId]: updatedChannelSettings
+    };
+
+    const updatedSettings: ExtensionSettings = { ...settings, channels: updatedChannels, lastUpdated: Date.now() };
+    const storage = await this.getStorageApi();
+    await storage.set({ [this.STORAGE_KEY]: updatedSettings });
+    return true;
+  }
+
+  public async getCurrentChannel(): Promise<string | undefined> {
+    const result = await chrome.storage.local.get('current_yt_channel');
+    return result.current_yt_channel;
+  }
+
+  public async setCurrentChannel(channelId: string): Promise<void> {
+    if (!channelId) return;
+    await chrome.storage.local.set({ current_yt_channel: channelId });
   }
 }

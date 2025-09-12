@@ -1,3 +1,5 @@
 import { YoutubeTwitchChatStorageWorker } from './workers/storage';
+import { YoutubeTwitchChatIPCWorker } from './workers/ipc';
 
-new YoutubeTwitchChatStorageWorker();
+const storageWorker = new YoutubeTwitchChatStorageWorker();
+new YoutubeTwitchChatIPCWorker(storageWorker);

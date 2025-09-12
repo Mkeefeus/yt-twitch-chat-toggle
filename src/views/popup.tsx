@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import { getLocaleMessage } from '../helpers';
 import { ToggleSetting } from '../components/ToggleSetting';
+import { MessageAction, type MessageRequest } from '../types';
 
 const POPUP_TITLE = getLocaleMessage('extension_name');
 const POPUP_DESCRIPTION = getLocaleMessage('extension_description');
@@ -13,6 +14,15 @@ export function Popup({ handleNavigation }: { handleNavigation: (route: string) 
     const input = document.getElementById('twitch-channel') as HTMLInputElement;
     setChannel(input.value);
     // Send message to service worker script to save
+    chrome.runtime.sendMessage({
+      action: MessageAction.UPDATE_CHANNEL_SETTINGS,
+      data: {
+        channelId: channel,
+        data: {
+          twitchChannel: channel
+        }
+      }
+    } as MessageRequest<MessageAction.UPDATE_CHANNEL_SETTINGS>);
   };
 
   return (
