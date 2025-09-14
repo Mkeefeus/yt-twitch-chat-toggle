@@ -8,7 +8,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        popup: 'popup.html',
         serviceworker: 'src/serviceworker.ts'
       },
       output: {
@@ -18,7 +17,6 @@ export default defineConfig({
         format: 'es'
       }
     },
-    sourcemap: true,
     outDir: 'dist'
   }
 });

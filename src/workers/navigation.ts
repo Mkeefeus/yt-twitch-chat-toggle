@@ -1,14 +1,16 @@
 import { formatConsoleMessage } from '../helpers';
 
 const MAX_ATTEMPTS = 5;
+const CHATFRAME_TIMEOUT_MS = 10000; // Time to wait for chat frame to appear
 
 export class YoutubeTwitchChatNavigationWorker {
 
-  private onStreamLoaded: ((channelName: string) => void) | null = null;
+  private onStreamLoadedCallbacks: Array<() => void> = [];
+  private onStreamUnloadedCallbacks: Array<() => void> = [];
   private channelName: string = '';
+  private liveStreamLoaded: boolean = false;
 
-  constructor(onStreamLoaded: (channelName: string) => void) {
-    this.onStreamLoaded = onStreamLoaded;
+  constructor() {
     this.setupNavigationListener();
     console.log(formatConsoleMessage('NavigationWorker', 'Navigation Worker initialized'));
   }
@@ -52,29 +54,39 @@ export class YoutubeTwitchChatNavigationWorker {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private async isLiveStream(): Promise<boolean> {
-    // Check for the presence of the chat frame
-    const chatFrame = document.querySelector('#chatframe');
-    const isLive = chatFrame !== null;
-    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-      if (isLive) {
-        return true;
-      }
+  private isLiveStream(): Promise<boolean> {
+    return new Promise<boolean>(async (resolve) => {
+      const intervalId = setInterval(() => {
+        const chatFrame = document.querySelector('#chatframe');
+        if (chatFrame) {
+          clearInterval(intervalId);
+          console.log(formatConsoleMessage('NavigationWorker', 'Live stream detected via chat frame'));
+          resolve(true);
+        }
+      }, 500);
 
-      if (attempt < MAX_ATTEMPTS - 1) {
-        console.log(formatConsoleMessage('NavigationWorker', `Live stream detection attempt ${attempt + 1} failed, retrying...`));
-        await this.sleep(500); // Wait longer for DOM to load
-      }
-    }
+      await this.sleep(CHATFRAME_TIMEOUT_MS);
+      clearInterval(intervalId);
 
-    console.log(formatConsoleMessage('NavigationWorker', 'Live stream detection failed after all attempts'));
-    return false;
+      console.log(formatConsoleMessage('NavigationWorker', 'Live stream detection failed after all attempts'));
+      resolve(false);
+    });
   }
 
   private onNavigation = async (eventType: string): Promise<void> => {
     await this.sleep(100); // Slight delay to allow DOM to update
+    await chrome.storage.local.remove('current_yt_channel');
     console.log(formatConsoleMessage('NavigationWorker', `Navigation event detected: ${eventType}, URL: ${window.location.href}`));
 
+    const previousChannel = this.channelName;
+    const previousLiveState = this.liveStreamLoaded;
+    this.channelName = '';
+    this.liveStreamLoaded = false;
+
+    if (previousLiveState && previousChannel) {
+      console.log(formatConsoleMessage('NavigationWorker', `Stream unloaded for channel: ${previousChannel}`));
+      this.runOnStreamUnloadedCallbacks();
+    }
     let attempt = 0;
     while (attempt < MAX_ATTEMPTS) {
       this.channelName = this.extractChannelName();
@@ -86,22 +98,17 @@ export class YoutubeTwitchChatNavigationWorker {
     }
     if (this.channelName === '') {
       console.log(formatConsoleMessage('NavigationWorker', 'No channel name found, skipping further processing'));
-      chrome.storage.local.remove('current_yt_channel');
       return;
     }
     const isLive = await this.isLiveStream();
     console.log(formatConsoleMessage('NavigationWorker', `Is live stream: ${isLive}`));
     if (!isLive) {
       console.log(formatConsoleMessage('NavigationWorker', 'Not a live stream, skipping channel storage'));
-      chrome.storage.local.remove('current_yt_channel');
       return;
     }
-    chrome.storage.local.set({ current_yt_channel: this.channelName });
-    if (!this.onStreamLoaded) {
-      console.warn(formatConsoleMessage('NavigationWorker', 'No onStreamLoaded callback defined'));
-      return;
-    }
-    this.onStreamLoaded(this.channelName);
+    await chrome.storage.local.set({ current_yt_channel: this.channelName });
+    this.liveStreamLoaded = true;
+    this.runOnStreamLoadedCallbacks();
   }
 
   private setupNavigationListener = () => {
@@ -127,4 +134,25 @@ export class YoutubeTwitchChatNavigationWorker {
     // Initial trigger
     this.onNavigation('initial');
   }
+
+  private runOnStreamLoadedCallbacks() {
+    for (const callback of this.onStreamLoadedCallbacks) {
+      callback();
+    }
+  }
+
+  private runOnStreamUnloadedCallbacks() {
+    for (const callback of this.onStreamUnloadedCallbacks) {
+      callback();
+    }
+  }
+
+  public onStreamLoaded(callback: () => void) {
+    this.onStreamLoadedCallbacks.push(callback);
+  }
+
+  public onStreamUnloaded(callback: () => void) {
+    this.onStreamUnloadedCallbacks.push(callback);
+  }
+
 }
