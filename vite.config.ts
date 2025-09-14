@@ -8,7 +8,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        serviceworker: 'src/serviceworker.ts'
+        serviceworker: 'src/serviceworker.ts',
+        popup: 'popup.html'
       },
       output: {
         entryFileNames: '[name].js',
