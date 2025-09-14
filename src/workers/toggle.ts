@@ -45,7 +45,10 @@ export class YoutubeTwitchChatToggleWorker {
 
   private async loadInitialState() {
     const currentChannel = await this.storageWorker.getCurrentChannel();
-    console.log(formatConsoleMessage('ToggleWorker', 'Current channel from storage:'), currentChannel);
+    console.log(
+      formatConsoleMessage('ToggleWorker', 'Current channel from storage:'),
+      currentChannel
+    );
 
     if (!currentChannel) return;
 
@@ -151,6 +154,6 @@ export class YoutubeTwitchChatToggleWorker {
   public destroy() {
     this.container.remove();
     // Clean up event listeners if needed
-    chrome.storage.local.onChanged.removeListener(() => { });
+    chrome.storage.local.onChanged.removeListener(() => {});
   }
 }

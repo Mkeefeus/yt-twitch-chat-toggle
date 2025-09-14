@@ -3,7 +3,6 @@ import { formatConsoleMessage } from '../helpers';
 const INFO_TIMEOUT_MS = 10000; // Time to wait for chat frame to appear
 
 export class YoutubeTwitchChatNavigationWorker {
-
   private onStreamLoadedCallbacks: Array<() => void> = [];
   private onStreamUnloadedCallbacks: Array<() => void> = [];
   private channelName: string = '';
@@ -31,11 +30,17 @@ export class YoutubeTwitchChatNavigationWorker {
         if (!match) {
           return;
         }
-        let channelName = match[1]
-        console.log(formatConsoleMessage('NavigationWorker', 'Found channel via owner div @link:'), channelName);
+        let channelName = match[1];
+        console.log(
+          formatConsoleMessage('NavigationWorker', 'Found channel via owner div @link:'),
+          channelName
+        );
         channelName = decodeURIComponent(channelName);
         channelName = channelName.split('?')[0].split('#')[0];
-        console.log(formatConsoleMessage('NavigationWorker', 'yt-twitch-chat: Final cleaned channel name:'), channelName);
+        console.log(
+          formatConsoleMessage('NavigationWorker', 'yt-twitch-chat: Final cleaned channel name:'),
+          channelName
+        );
         resolve(channelName);
         clearInterval(intervalId);
       }, 500);
@@ -50,19 +55,19 @@ export class YoutubeTwitchChatNavigationWorker {
   private validateRepeatChannelNameExtraction = (channelName: string): Promise<string> => {
     return new Promise((resolve) => {
       const intervalId = setInterval(async () => {
-        const newChannelName = await this.getChannelFromOwnerLink()
+        const newChannelName = await this.getChannelFromOwnerLink();
         if (newChannelName === channelName) {
-          return
+          return;
         }
-        resolve(newChannelName)
-        clearInterval(intervalId)
-      }, 500)
+        resolve(newChannelName);
+        clearInterval(intervalId);
+      }, 500);
       setTimeout(() => {
-        resolve(channelName)
-        clearInterval(intervalId)
-      }, INFO_TIMEOUT_MS)
-    })
-  }
+        resolve(channelName);
+        clearInterval(intervalId);
+      }, INFO_TIMEOUT_MS);
+    });
+  };
 
   private async extractChannelName(): Promise<string> {
     // Only extract channel names on video/live stream pages
@@ -79,12 +84,27 @@ export class YoutubeTwitchChatNavigationWorker {
     }
 
     if (channelName === this.previousChannelName) {
-      console.log(formatConsoleMessage('NavigationWorker', `Channel name ${channelName} is the same as previous channel, validating...`));
+      console.log(
+        formatConsoleMessage(
+          'NavigationWorker',
+          `Channel name ${channelName} is the same as previous channel, validating...`
+        )
+      );
       channelName = await this.validateRepeatChannelNameExtraction(channelName);
       if (channelName === this.previousChannelName) {
-        console.log(formatConsoleMessage('NavigationWorker', `Channel name ${channelName} confirmed as previous channel after validation`));
+        console.log(
+          formatConsoleMessage(
+            'NavigationWorker',
+            `Channel name ${channelName} confirmed as previous channel after validation`
+          )
+        );
       } else {
-        console.log(formatConsoleMessage('NavigationWorker', `Channel name changed to ${channelName} after validation`));
+        console.log(
+          formatConsoleMessage(
+            'NavigationWorker',
+            `Channel name changed to ${channelName} after validation`
+          )
+        );
       }
     }
 
@@ -115,31 +135,50 @@ export class YoutubeTwitchChatNavigationWorker {
   private onNavigation = async (eventType: string): Promise<void> => {
     await this.sleep(100); // Slight delay to allow DOM to update
     await chrome.storage.local.remove('current_yt_channel');
-    console.log(formatConsoleMessage('NavigationWorker', `Navigation event detected: ${eventType}, URL: ${window.location.href}`));
+    console.log(
+      formatConsoleMessage(
+        'NavigationWorker',
+        `Navigation event detected: ${eventType}, URL: ${window.location.href}`
+      )
+    );
 
     this.channelName = '';
 
     if (this.previousChannelName) {
-      console.log(formatConsoleMessage('NavigationWorker', `Stream unloaded for channel: ${this.previousChannelName}`));
+      console.log(
+        formatConsoleMessage(
+          'NavigationWorker',
+          `Stream unloaded for channel: ${this.previousChannelName}`
+        )
+      );
       this.runOnStreamUnloadedCallbacks();
     }
 
     this.channelName = await this.extractChannelName();
 
     if (this.channelName === '') {
-      console.log(formatConsoleMessage('NavigationWorker', 'No channel name found, skipping further processing'));
+      console.log(
+        formatConsoleMessage(
+          'NavigationWorker',
+          'No channel name found, skipping further processing'
+        )
+      );
       return;
     }
     const isLive = await this.isLiveStream();
     if (!isLive) {
-      console.log(formatConsoleMessage('NavigationWorker', 'Not a live stream, skipping channel storage'));
+      console.log(
+        formatConsoleMessage('NavigationWorker', 'Not a live stream, skipping channel storage')
+      );
       return;
     }
     await chrome.storage.local.set({ current_yt_channel: this.channelName });
     this.previousChannelName = this.channelName;
-    console.log(formatConsoleMessage('NavigationWorker', `Stream loaded for channel: ${this.channelName}`));
+    console.log(
+      formatConsoleMessage('NavigationWorker', `Stream loaded for channel: ${this.channelName}`)
+    );
     this.runOnStreamLoadedCallbacks();
-  }
+  };
 
   private setupNavigationListener = () => {
     // Helper type for history methods
@@ -163,7 +202,7 @@ export class YoutubeTwitchChatNavigationWorker {
 
     // Initial trigger
     this.onNavigation('initial');
-  }
+  };
 
   private runOnStreamLoadedCallbacks() {
     for (const callback of this.onStreamLoadedCallbacks) {
@@ -184,5 +223,4 @@ export class YoutubeTwitchChatNavigationWorker {
   public onStreamUnloaded(callback: () => void) {
     this.onStreamUnloadedCallbacks.push(callback);
   }
-
 }

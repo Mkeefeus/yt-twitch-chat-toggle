@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build:main": "tsc -b && bunx --bun vite build --config vite.config.ts",
+    "build:main": "bun run format &&tsc -b && bunx --bun vite build --config vite.config.ts",
     "build:content": "bunx --bun vite build --config vite.config.content.ts",
     "build": "bun run build:main && bun run build:content",
     "format": "bunx --bun prettier --write ."

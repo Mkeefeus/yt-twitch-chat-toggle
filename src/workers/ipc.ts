@@ -1,9 +1,5 @@
 import { formatConsoleMessage } from '../helpers';
-import {
-  MessageAction,
-  type MessageRequest,
-  type MessageResponse
-} from '../types';
+import { MessageAction, type MessageRequest, type MessageResponse } from '../types';
 import { YoutubeTwitchChatStorageWorker } from './storage';
 
 export class YoutubeTwitchChatIPCWorker {
@@ -40,10 +36,7 @@ export class YoutubeTwitchChatIPCWorker {
     try {
       switch (message.action) {
         case MessageAction.GET_SETTINGS:
-          await this.handleGetSettings(
-            sender,
-            sendResponse
-          );
+          await this.handleGetSettings(sender, sendResponse);
           break;
         case MessageAction.UPDATE_SETTINGS:
           await this.handleUpdateSettings(
@@ -140,14 +133,21 @@ export class YoutubeTwitchChatIPCWorker {
       )
     );
     if (!message.data) {
-      console.error(formatConsoleMessage('IPCWorker', 'No data provided for channel settings request'));
+      console.error(
+        formatConsoleMessage('IPCWorker', 'No data provided for channel settings request')
+      );
       sendResponse({ success: false });
       return;
     }
 
     const channelSettings = await this.storageWorker.getChannelSettings(message.data.channelId);
     if (!channelSettings) {
-      console.error(formatConsoleMessage('IPCWorker', `No channel settings found for channel ID: ${message.data.channelId}`));
+      console.error(
+        formatConsoleMessage(
+          'IPCWorker',
+          `No channel settings found for channel ID: ${message.data.channelId}`
+        )
+      );
       sendResponse({ success: false, data: undefined });
       return;
     }
@@ -168,7 +168,9 @@ export class YoutubeTwitchChatIPCWorker {
     );
 
     if (!message.data) {
-      console.error(formatConsoleMessage('IPCWorker', 'No data provided for channel settings update'));
+      console.error(
+        formatConsoleMessage('IPCWorker', 'No data provided for channel settings update')
+      );
       sendResponse({ success: false });
       return;
     }

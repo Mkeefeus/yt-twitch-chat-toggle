@@ -4,7 +4,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        content: 'src/content.ts',
+        content: 'src/content.ts'
       },
       output: {
         entryFileNames: 'content.js',

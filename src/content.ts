@@ -15,12 +15,11 @@ const initializeContentScript = () => {
   };
   const handleStreamUnloaded = () => {
     console.log(formatConsoleMessage('ContentScript', 'Stream unloaded, cleaning up'));
-  }
+  };
 
   const navigationWorker = new YoutubeTwitchChatNavigationWorker();
   navigationWorker.onStreamLoaded(handleStreamLoaded);
   navigationWorker.onStreamUnloaded(handleStreamUnloaded);
-
-}
+};
 
 initializeContentScript();

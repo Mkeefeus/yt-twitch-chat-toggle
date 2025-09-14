@@ -1,8 +1,5 @@
 import { formatConsoleMessage } from '../helpers';
-import {
-  type ChannelSettings,
-  type ExtensionSettings
-} from '../types';
+import { type ChannelSettings, type ExtensionSettings } from '../types';
 
 export class YoutubeTwitchChatStorageWorker {
   private STORAGE_KEY: string = 'yt_twitch_chat_settings';
@@ -159,7 +156,11 @@ export class YoutubeTwitchChatStorageWorker {
       [channelId]: updatedChannelSettings
     };
 
-    const updatedSettings: ExtensionSettings = { ...settings, channels: updatedChannels, lastUpdated: Date.now() };
+    const updatedSettings: ExtensionSettings = {
+      ...settings,
+      channels: updatedChannels,
+      lastUpdated: Date.now()
+    };
     const storage = await this.getStorageApi();
     await storage.set({ [this.STORAGE_KEY]: updatedSettings });
     return true;

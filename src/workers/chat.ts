@@ -9,7 +9,10 @@ export class YoutubeTwitchChatChatWorker {
   private themeWorker: YoutubeTwitchChatThemeWorker;
   private twitchIframe?: HTMLIFrameElement;
 
-  constructor(storageWorker: YoutubeTwitchChatStorageWorker, themeWorker: YoutubeTwitchChatThemeWorker) {
+  constructor(
+    storageWorker: YoutubeTwitchChatStorageWorker,
+    themeWorker: YoutubeTwitchChatThemeWorker
+  ) {
     this.storageWorker = storageWorker;
     this.themeWorker = themeWorker;
     this.init();
@@ -120,7 +123,10 @@ export class YoutubeTwitchChatChatWorker {
 
     this.twitchIframe = document.createElement('iframe');
     this.twitchIframe.id = 'twitch-chat-iframe';
-    this.twitchIframe.src = this.getTwitchChatUrl(this.channelSettings.twitchChannel, this.themeWorker.theme);
+    this.twitchIframe.src = this.getTwitchChatUrl(
+      this.channelSettings.twitchChannel,
+      this.themeWorker.theme
+    );
     this.twitchIframe.setAttribute('allow', 'clipboard-read; clipboard-write');
     this.twitchIframe.className = 'ytd-live-chat-frame';
 

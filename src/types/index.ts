@@ -2,7 +2,7 @@ export enum MessageAction {
   GET_SETTINGS = 'getSettings',
   UPDATE_SETTINGS = 'updateSettings',
   GET_CHANNEL_SETTINGS = 'getChannelSettings',
-  UPDATE_CHANNEL_SETTINGS = 'updateChannelSettings',
+  UPDATE_CHANNEL_SETTINGS = 'updateChannelSettings'
 }
 
 export type MessageRequest<T extends MessageAction = MessageAction> = {

@@ -3,29 +3,35 @@ import type { YoutubeTwitchChatStorageWorker } from './storage';
 
 export class YoutubeTwitchChatThemeWorker {
   public theme: 'light' | 'dark' = 'dark';
-  private systemTheme: 'light' | 'dark' =
-    window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  private systemTheme: 'light' | 'dark' = window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
   private themeSetting: 'light' | 'dark' | 'system' = 'system';
-  private storageWorker: YoutubeTwitchChatStorageWorker
+  private storageWorker: YoutubeTwitchChatStorageWorker;
   private listeners: ((theme: 'light' | 'dark') => void)[] = [];
   constructor(storageWorker: YoutubeTwitchChatStorageWorker) {
-    this.storageWorker = storageWorker
+    this.storageWorker = storageWorker;
     this.init();
   }
   private init() {
-    this.setupEventListeners()
+    this.setupEventListeners();
     this.loadInitialState();
   }
 
   private async loadInitialState() {
-    const settings = await this.storageWorker.getSettings()
+    const settings = await this.storageWorker.getSettings();
     if (!settings) {
-      console.error(formatConsoleMessage('ThemeWorker', 'failed to get extension settings'))
+      console.error(formatConsoleMessage('ThemeWorker', 'failed to get extension settings'));
       return;
     }
-    this.themeSetting = settings.theme
-    this.setThemeFromSettings()
-    console.log(formatConsoleMessage('ThemeWorker', `Initialized with theme setting: ${this.themeSetting}, system theme: ${this.systemTheme}, resulting theme: ${this.theme}`))
+    this.themeSetting = settings.theme;
+    this.setThemeFromSettings();
+    console.log(
+      formatConsoleMessage(
+        'ThemeWorker',
+        `Initialized with theme setting: ${this.themeSetting}, system theme: ${this.systemTheme}, resulting theme: ${this.theme}`
+      )
+    );
   }
 
   private reinitialize = async () => {
@@ -34,9 +40,11 @@ export class YoutubeTwitchChatThemeWorker {
     if (this.theme === oldTheme) {
       return;
     }
-    console.log(formatConsoleMessage('ThemeWorker', `Theme updated to ${this.theme} due to settings change`));
+    console.log(
+      formatConsoleMessage('ThemeWorker', `Theme updated to ${this.theme} due to settings change`)
+    );
     this.runThemeChangeListeners();
-  }
+  };
 
   private setupEventListeners() {
     const mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
@@ -56,7 +64,12 @@ export class YoutubeTwitchChatThemeWorker {
     } else {
       this.theme = this.themeSetting;
     }
-    console.log(formatConsoleMessage('ThemeWorker', `Theme set to ${this.theme} based on setting ${this.themeSetting}`));
+    console.log(
+      formatConsoleMessage(
+        'ThemeWorker',
+        `Theme set to ${this.theme} based on setting ${this.themeSetting}`
+      )
+    );
   }
   public registerThemeChangeListener(callback: (theme: 'light' | 'dark') => Promise<void> | void) {
     // when this.theme changes, run callback
@@ -64,11 +77,13 @@ export class YoutubeTwitchChatThemeWorker {
   }
 
   private runThemeChangeListeners() {
-    this.listeners.forEach(callback => {
+    this.listeners.forEach((callback) => {
       try {
         callback(this.theme);
       } catch (error) {
-        console.error(formatConsoleMessage('ThemeWorker', `Error in theme change listener: ${error}`));
+        console.error(
+          formatConsoleMessage('ThemeWorker', `Error in theme change listener: ${error}`)
+        );
       }
     });
   }
