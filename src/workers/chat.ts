@@ -61,20 +61,23 @@ export class YoutubeTwitchChatChatWorker {
     const ytIframe = document.getElementById('chatframe') as HTMLIFrameElement;
     if (ytIframe) {
       this.youtubeiFrame = ytIframe;
-      this.setupYouTubeIframeStyles();
+      this.youtubeiFrame.style.transition = 'opacity 0.3s ease-in-out';
       this.updateChatVisibility();
     }
   }
 
-  private setupYouTubeIframeStyles() {
-    if (!this.youtubeiFrame) return;
-    this.youtubeiFrame.style.transition = 'opacity 0.3s ease-in-out';
+  private showiFrame(iframe: HTMLIFrameElement) {
+    iframe.style.opacity = '1';
+    iframe.style.pointerEvents = 'auto';
+    iframe.style.position = 'static';
+    iframe.style.visibility = 'visible';
   }
 
-  private setupTwitchIframeStyles() {
-    if (!this.twitchIframe) return;
-    this.twitchIframe.style.transition = 'opacity 0.3s ease-in-out';
-    this.twitchIframe.style.position = 'absolute';
+  private hideiFrame(iframe: HTMLIFrameElement) {
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    iframe.style.position = 'absolute';
+    iframe.style.visibility = 'hidden';
   }
 
   private updateChatVisibility() {
@@ -87,28 +90,16 @@ export class YoutubeTwitchChatChatWorker {
     }
 
     if (showTwitch) {
-      this.youtubeiFrame.style.opacity = '0';
-      this.youtubeiFrame.style.pointerEvents = 'none';
-      this.youtubeiFrame.style.position = 'absolute';
-      this.youtubeiFrame.style.visibility = 'hidden';
+      this.hideiFrame(this.youtubeiFrame);
 
       if (this.twitchIframe) {
-        this.twitchIframe.style.opacity = '1';
-        this.twitchIframe.style.pointerEvents = 'auto';
-        this.twitchIframe.style.position = 'static';
-        this.twitchIframe.style.visibility = 'visible';
+        this.showiFrame(this.twitchIframe);
       }
     } else {
-      this.youtubeiFrame.style.opacity = '1';
-      this.youtubeiFrame.style.pointerEvents = 'auto';
-      this.youtubeiFrame.style.position = 'static';
-      this.youtubeiFrame.style.visibility = 'visible';
+      this.showiFrame(this.youtubeiFrame);
 
       if (this.twitchIframe) {
-        this.twitchIframe.style.opacity = '0';
-        this.twitchIframe.style.pointerEvents = 'none';
-        this.twitchIframe.style.position = 'absolute';
-        this.twitchIframe.style.visibility = 'hidden';
+        this.hideiFrame(this.twitchIframe);
       }
     }
   }
@@ -133,7 +124,8 @@ export class YoutubeTwitchChatChatWorker {
     this.twitchIframe.setAttribute('allow', 'clipboard-read; clipboard-write');
     this.twitchIframe.className = 'ytd-live-chat-frame';
 
-    this.setupTwitchIframeStyles();
+    this.twitchIframe.style.transition = 'opacity 0.3s ease-in-out';
+    this.twitchIframe.style.position = 'absolute';
     this.twitchIframe.style.opacity = '0';
     this.twitchIframe.style.pointerEvents = 'none';
     this.twitchIframe.style.position = 'absolute';
