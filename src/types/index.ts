@@ -1,8 +1,10 @@
+const prefix = 'yt-twitch-chat';
 export enum MessageAction {
-  GET_SETTINGS = 'getSettings',
-  UPDATE_SETTINGS = 'updateSettings',
-  GET_CHANNEL_SETTINGS = 'getChannelSettings',
-  UPDATE_CHANNEL_SETTINGS = 'updateChannelSettings'
+  GET_SETTINGS = `${prefix}-get-settings`,
+  UPDATE_SETTINGS = `${prefix}-update-settings`,
+  GET_CHANNEL_SETTINGS = `${prefix}-get-channel-settings`,
+  UPDATE_CHANNEL_SETTINGS = `${prefix}-update-channel-settings`,
+  THEME_CHANGED = `${prefix}-theme-changed`
 }
 
 export type MessageRequest<T extends MessageAction = MessageAction> = {
@@ -15,6 +17,7 @@ type RequestData = {
   [MessageAction.UPDATE_SETTINGS]: Partial<ExtensionSettings>;
   [MessageAction.GET_CHANNEL_SETTINGS]: { channelId: string };
   [MessageAction.UPDATE_CHANNEL_SETTINGS]: { channelId: string; data: Partial<ChannelSettings> };
+  [MessageAction.THEME_CHANGED]: { theme: Theme };
 };
 
 type ResponseData = {
@@ -22,6 +25,7 @@ type ResponseData = {
   [MessageAction.UPDATE_SETTINGS]: undefined;
   [MessageAction.GET_CHANNEL_SETTINGS]: ChannelSettings | undefined;
   [MessageAction.UPDATE_CHANNEL_SETTINGS]: undefined;
+  [MessageAction.THEME_CHANGED]: undefined;
 };
 
 export type MessageResponse<T extends MessageAction = MessageAction> = {
@@ -29,7 +33,9 @@ export type MessageResponse<T extends MessageAction = MessageAction> = {
   data?: ResponseData[T];
 };
 
-export type Themes = 'light' | 'dark' | 'system';
+export type SystemTheme = 'light' | 'dark' | 'system';
+
+export type Theme = 'light' | 'dark';
 
 // These could be interfaces if you plan to extend them
 export interface ExtensionSettings {
@@ -37,7 +43,7 @@ export interface ExtensionSettings {
   channels: Record<string, ChannelSettings>;
   lastUpdated: number;
   keepChatsLoaded: boolean;
-  theme: Themes;
+  theme: SystemTheme;
   useSync: boolean;
 }
 

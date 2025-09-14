@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'preact/hooks';
-import { MessageAction, type MessageRequest, type MessageResponse, type Themes } from '../types';
+import { MessageAction, type MessageRequest, type MessageResponse, type SystemTheme } from '../types';
 
 export function useTheme() {
-  const [theme, setTheme] = useState<Themes>('system');
+  const [theme, setTheme] = useState<SystemTheme>('system');
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
   );
@@ -37,7 +37,7 @@ export function useTheme() {
     updateDocumentClass(theme);
   }, [theme]);
 
-  const updateDocumentClass = (theme: Themes) => {
+  const updateDocumentClass = (theme: SystemTheme) => {
     switch (theme) {
       case 'dark':
         document.documentElement.classList.add('dark');
@@ -59,7 +59,7 @@ export function useTheme() {
     }
   };
 
-  const updateTheme = async (newTheme: Themes): Promise<void> => {
+  const updateTheme = async (newTheme: SystemTheme): Promise<void> => {
     setTheme(newTheme);
     updateDocumentClass(newTheme);
 

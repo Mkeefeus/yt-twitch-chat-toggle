@@ -1,14 +1,20 @@
 import { formatConsoleMessage } from '../helpers';
+import { MessageAction, type SystemTheme, type Theme } from '../types';
 import type { YoutubeTwitchChatStorageWorker } from './storage';
 
 export class YoutubeTwitchChatThemeWorker {
-  public theme: 'light' | 'dark' = 'dark';
-  private systemTheme: 'light' | 'dark' = window.matchMedia('(prefers-color-scheme: dark)').matches
+  public theme: Theme = 'dark';
+  private systemTheme: Theme = window.matchMedia('(prefers-color-scheme: dark)').matches
     ? 'dark'
     : 'light';
-  private themeSetting: 'light' | 'dark' | 'system' = 'system';
+  private themeSetting: SystemTheme = 'system';
   private storageWorker: YoutubeTwitchChatStorageWorker;
-  private listeners: ((theme: 'light' | 'dark') => void)[] = [];
+  private listeners: ((theme: Theme) => void)[] = [];
+  private mediaQueryList?: MediaQueryList;
+  private storageChangeListener?: (
+    changes: { [key: string]: chrome.storage.StorageChange },
+    areaName: string
+  ) => void;
   constructor(storageWorker: YoutubeTwitchChatStorageWorker) {
     this.storageWorker = storageWorker;
     this.init();
@@ -35,6 +41,8 @@ export class YoutubeTwitchChatThemeWorker {
   }
 
   private reinitialize = async () => {
+    // Refresh system theme for 'system' mode changes
+    this.systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     const oldTheme = this.theme;
     await this.loadInitialState();
     if (this.theme === oldTheme) {
@@ -43,19 +51,21 @@ export class YoutubeTwitchChatThemeWorker {
     console.log(
       formatConsoleMessage('ThemeWorker', `Theme updated to ${this.theme} due to settings change`)
     );
-    this.runThemeChangeListeners();
+    // this.runThemeChangeListeners();
+    chrome.runtime.sendMessage({ action: MessageAction.THEME_CHANGED, theme: this.theme });
   };
 
   private setupEventListeners() {
-    const mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQueryList.addEventListener('change', this.reinitialize);
-    chrome.storage.onChanged.addListener((changes) => {
+    this.mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+    this.mediaQueryList.addEventListener('change', this.reinitialize);
+    this.storageChangeListener = (changes) => {
       if (!changes.yt_twitch_chat_settings) {
         return;
       }
       console.log(formatConsoleMessage('ThemeWorker', 'Detected settings change in storage'));
       this.reinitialize();
-    });
+    };
+    chrome.storage.onChanged.addListener(this.storageChangeListener);
   }
 
   private setThemeFromSettings() {
@@ -71,9 +81,15 @@ export class YoutubeTwitchChatThemeWorker {
       )
     );
   }
-  public registerThemeChangeListener(callback: (theme: 'light' | 'dark') => Promise<void> | void) {
+  public onThemeChange(callback: (theme: Theme) => Promise<void> | void) {
     // when this.theme changes, run callback
     this.listeners.push(callback);
+  }
+
+  public unregisterThemeChangeListener(
+    callback: (theme: Theme) => Promise<void> | void
+  ) {
+    this.listeners = this.listeners.filter((cb) => cb !== callback);
   }
 
   private runThemeChangeListeners() {
@@ -86,5 +102,17 @@ export class YoutubeTwitchChatThemeWorker {
         );
       }
     });
+  }
+
+  public destroy() {
+    if (this.mediaQueryList) {
+      this.mediaQueryList.removeEventListener('change', this.reinitialize);
+      this.mediaQueryList = undefined;
+    }
+    if (this.storageChangeListener) {
+      chrome.storage.onChanged.removeListener(this.storageChangeListener);
+      this.storageChangeListener = undefined;
+    }
+    this.listeners = [];
   }
 }

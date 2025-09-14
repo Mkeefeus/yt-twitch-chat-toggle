@@ -6,15 +6,29 @@ import { YoutubeTwitchChatThemeWorker } from './workers/theme';
 import { formatConsoleMessage } from './helpers';
 
 const initializeContentScript = () => {
+  let storageWorker: YoutubeTwitchChatStorageWorker | undefined = undefined;
+  let themeWorker: YoutubeTwitchChatThemeWorker | undefined = undefined;
+  let chatWorker: YoutubeTwitchChatChatWorker | undefined = undefined;
+  let toggleWorker: YoutubeTwitchChatToggleWorker | undefined = undefined;
+
   const handleStreamLoaded = () => {
     console.log(formatConsoleMessage('ContentScript', 'Stream loaded, initializing workers'));
-    const storageWorker = new YoutubeTwitchChatStorageWorker();
-    const themeWorker = new YoutubeTwitchChatThemeWorker(storageWorker);
-    new YoutubeTwitchChatToggleWorker(storageWorker);
-    new YoutubeTwitchChatChatWorker(storageWorker, themeWorker);
+    storageWorker = new YoutubeTwitchChatStorageWorker();
+    themeWorker = new YoutubeTwitchChatThemeWorker(storageWorker);
+    toggleWorker = new YoutubeTwitchChatToggleWorker(storageWorker);
+    chatWorker = new YoutubeTwitchChatChatWorker(storageWorker, themeWorker);
   };
+
   const handleStreamUnloaded = () => {
     console.log(formatConsoleMessage('ContentScript', 'Stream unloaded, cleaning up'));
+    chatWorker?.destroy();
+    toggleWorker?.destroy();
+    themeWorker?.destroy();
+    // Nullify references
+    storageWorker = undefined;
+    themeWorker = undefined;
+    chatWorker = undefined;
+    toggleWorker = undefined;
   };
 
   const navigationWorker = new YoutubeTwitchChatNavigationWorker();

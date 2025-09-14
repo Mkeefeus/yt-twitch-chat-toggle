@@ -5,6 +5,12 @@ export class YoutubeTwitchChatToggleWorker {
   private preferredChat: 'youtube' | 'twitch' = 'youtube';
   private storageWorker: YoutubeTwitchChatStorageWorker;
   private container: HTMLElement;
+  // Listener refs for cleanup
+  private storageChangeListener?: (
+    changes: { [key: string]: chrome.storage.StorageChange },
+    areaName: string
+  ) => void;
+  private clickHandler?: (ev: Event) => void;
 
   constructor(storageWorker: YoutubeTwitchChatStorageWorker) {
     this.storageWorker = storageWorker;
@@ -62,16 +68,19 @@ export class YoutubeTwitchChatToggleWorker {
 
   private setupEventListeners() {
     // Listen for storage changes
-    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
-      if (changes.current_yt_channel) {
+    this.storageChangeListener = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      _areaName: string
+    ) => {
+      if (changes.current_yt_channel || changes.yt_twitch_chat_settings) {
         this.loadInitialState();
       }
     };
-
-    chrome.storage.local.onChanged.addListener(handleStorageChange);
+    chrome.storage.onChanged.addListener(this.storageChangeListener);
 
     // Click handler
-    this.container.addEventListener('click', this.handleToggle.bind(this));
+    this.clickHandler = this.handleToggle.bind(this);
+    this.container.addEventListener('click', this.clickHandler);
   }
 
   private async handleToggle() {
@@ -152,8 +161,17 @@ export class YoutubeTwitchChatToggleWorker {
   }
 
   public destroy() {
+    // Remove event listeners
+    if (this.clickHandler) {
+      this.container.removeEventListener('click', this.clickHandler);
+      this.clickHandler = undefined;
+    }
+    if (this.storageChangeListener) {
+      chrome.storage.onChanged.removeListener(this.storageChangeListener);
+      this.storageChangeListener = undefined;
+    }
+
+    // Remove DOM node we injected
     this.container.remove();
-    // Clean up event listeners if needed
-    chrome.storage.local.onChanged.removeListener(() => {});
   }
 }
