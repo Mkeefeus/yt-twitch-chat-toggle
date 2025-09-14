@@ -1,3 +1,4 @@
+import { formatConsoleMessage } from '../helpers';
 import type { YoutubeTwitchChatStorageWorker } from './storage';
 
 export class YoutubeTwitchChatToggleWorker {
@@ -20,7 +21,7 @@ export class YoutubeTwitchChatToggleWorker {
     // Prevent duplicate injection
     const existing = controls.querySelector('.yt-chat-toggle-container');
     if (existing) {
-      console.log('Toggle already exists, removing old one');
+      console.log(formatConsoleMessage('ToggleWorker', 'Toggle already exists, removing old one'));
       existing.remove();
     }
 
@@ -44,14 +45,14 @@ export class YoutubeTwitchChatToggleWorker {
 
   private async loadInitialState() {
     const currentChannel = await this.storageWorker.getCurrentChannel();
-    console.log('yt-twitch-chat: Current channel from storage:', currentChannel);
+    console.log(formatConsoleMessage('ToggleWorker', 'Current channel from storage:'), currentChannel);
 
     if (!currentChannel) return;
 
     const settings = await this.storageWorker.getChannelSettings(currentChannel);
     if (!settings?.preferredChat) return;
 
-    console.log('yt-twitch-chat: Loaded settings from storage:', settings);
+    console.log(formatConsoleMessage('ToggleWorker', 'Loaded settings from storage:'), settings);
     this.preferredChat = settings.preferredChat;
     this.updateIcons();
   }

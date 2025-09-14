@@ -1,50 +1,91 @@
 import { formatConsoleMessage } from '../helpers';
 
-const MAX_ATTEMPTS = 5;
-const CHATFRAME_TIMEOUT_MS = 10000; // Time to wait for chat frame to appear
+const INFO_TIMEOUT_MS = 10000; // Time to wait for chat frame to appear
 
 export class YoutubeTwitchChatNavigationWorker {
 
   private onStreamLoadedCallbacks: Array<() => void> = [];
   private onStreamUnloadedCallbacks: Array<() => void> = [];
   private channelName: string = '';
-  private liveStreamLoaded: boolean = false;
+  private previousChannelName: string = '';
 
   constructor() {
     this.setupNavigationListener();
     console.log(formatConsoleMessage('NavigationWorker', 'Navigation Worker initialized'));
   }
 
-  private extractChannelName(): string {
+  private getChannelFromOwnerLink(): Promise<string> {
+    return new Promise((resolve) => {
+      const intervalId = setInterval(() => {
+        const ownerDiv = document.querySelector('#owner');
+        let ownerLink: HTMLAnchorElement | null = null;
+        if (!ownerDiv) {
+          return;
+        }
+        ownerLink = ownerDiv.querySelector('a[href*="/@"]') as HTMLAnchorElement;
+        if (!ownerLink) {
+          return;
+        }
+        const href = ownerLink.href;
+        const match = href.match(/\/@([^/?]+)/);
+        if (!match) {
+          return;
+        }
+        let channelName = match[1]
+        console.log(formatConsoleMessage('NavigationWorker', 'Found channel via owner div @link:'), channelName);
+        channelName = decodeURIComponent(channelName);
+        channelName = channelName.split('?')[0].split('#')[0];
+        console.log(formatConsoleMessage('NavigationWorker', 'yt-twitch-chat: Final cleaned channel name:'), channelName);
+        resolve(channelName);
+        clearInterval(intervalId);
+      }, 500);
+
+      setTimeout(() => {
+        clearInterval(intervalId);
+        resolve('');
+      }, INFO_TIMEOUT_MS);
+    });
+  }
+
+  private validateRepeatChannelNameExtraction = (channelName: string): Promise<string> => {
+    return new Promise((resolve) => {
+      const intervalId = setInterval(async () => {
+        const newChannelName = await this.getChannelFromOwnerLink()
+        if (newChannelName === channelName) {
+          return
+        }
+        resolve(newChannelName)
+        clearInterval(intervalId)
+      }, 500)
+      setTimeout(() => {
+        resolve(channelName)
+        clearInterval(intervalId)
+      }, INFO_TIMEOUT_MS)
+    })
+  }
+
+  private async extractChannelName(): Promise<string> {
     // Only extract channel names on video/live stream pages
     if (!window.location.href.includes('/watch')) {
       return '';
     }
 
     // Try multiple methods to get channel name
-    let channelName = '';
-
-    // Method 1: From div#owner > a tag with @link (most reliable)
-    const ownerDiv = document.querySelector('#owner');
-    if (ownerDiv) {
-      const ownerLink = ownerDiv.querySelector('a[href*="/@"]') as HTMLAnchorElement;
-      if (ownerLink) {
-        const href = ownerLink.href;
-        const match = href.match(/\/@([^/?]+)/);
-        if (match) {
-          channelName = match[1];
-          console.log('yt-twitch-chat: Found channel via owner div @link:', channelName);
-        }
-      }
-    }
+    let channelName = await this.getChannelFromOwnerLink();
 
     // Clean up the channel name
-    if (channelName) {
-      // Remove any URL encoding and clean up
-      channelName = decodeURIComponent(channelName);
-      // Remove any trailing parameters or fragments
-      channelName = channelName.split('?')[0].split('#')[0];
-      console.log('yt-twitch-chat: Final cleaned channel name:', channelName);
+    if (channelName === '') {
+      return channelName;
+    }
+
+    if (channelName === this.previousChannelName) {
+      console.log(formatConsoleMessage('NavigationWorker', `Channel name ${channelName} is the same as previous channel, validating...`));
+      channelName = await this.validateRepeatChannelNameExtraction(channelName);
+      if (channelName === this.previousChannelName) {
+        console.log(formatConsoleMessage('NavigationWorker', `Channel name ${channelName} confirmed as previous channel after validation`));
+      } else {
+        console.log(formatConsoleMessage('NavigationWorker', `Channel name changed to ${channelName} after validation`));
+      }
     }
 
     return channelName;
@@ -58,18 +99,16 @@ export class YoutubeTwitchChatNavigationWorker {
     return new Promise<boolean>(async (resolve) => {
       const intervalId = setInterval(() => {
         const chatFrame = document.querySelector('#chatframe');
-        if (chatFrame) {
-          clearInterval(intervalId);
-          console.log(formatConsoleMessage('NavigationWorker', 'Live stream detected via chat frame'));
-          resolve(true);
+        if (!chatFrame) {
+          return;
         }
+        clearInterval(intervalId);
+        resolve(true);
       }, 500);
-
-      await this.sleep(CHATFRAME_TIMEOUT_MS);
-      clearInterval(intervalId);
-
-      console.log(formatConsoleMessage('NavigationWorker', 'Live stream detection failed after all attempts'));
-      resolve(false);
+      setTimeout(() => {
+        clearInterval(intervalId);
+        resolve(false);
+      }, INFO_TIMEOUT_MS);
     });
   }
 
@@ -78,36 +117,27 @@ export class YoutubeTwitchChatNavigationWorker {
     await chrome.storage.local.remove('current_yt_channel');
     console.log(formatConsoleMessage('NavigationWorker', `Navigation event detected: ${eventType}, URL: ${window.location.href}`));
 
-    const previousChannel = this.channelName;
-    const previousLiveState = this.liveStreamLoaded;
     this.channelName = '';
-    this.liveStreamLoaded = false;
 
-    if (previousLiveState && previousChannel) {
-      console.log(formatConsoleMessage('NavigationWorker', `Stream unloaded for channel: ${previousChannel}`));
+    if (this.previousChannelName) {
+      console.log(formatConsoleMessage('NavigationWorker', `Stream unloaded for channel: ${this.previousChannelName}`));
       this.runOnStreamUnloadedCallbacks();
     }
-    let attempt = 0;
-    while (attempt < MAX_ATTEMPTS) {
-      this.channelName = this.extractChannelName();
-      if (this.channelName !== '') {
-        break;
-      }
-      attempt++;
-      await this.sleep(500);
-    }
+
+    this.channelName = await this.extractChannelName();
+
     if (this.channelName === '') {
       console.log(formatConsoleMessage('NavigationWorker', 'No channel name found, skipping further processing'));
       return;
     }
     const isLive = await this.isLiveStream();
-    console.log(formatConsoleMessage('NavigationWorker', `Is live stream: ${isLive}`));
     if (!isLive) {
       console.log(formatConsoleMessage('NavigationWorker', 'Not a live stream, skipping channel storage'));
       return;
     }
     await chrome.storage.local.set({ current_yt_channel: this.channelName });
-    this.liveStreamLoaded = true;
+    this.previousChannelName = this.channelName;
+    console.log(formatConsoleMessage('NavigationWorker', `Stream loaded for channel: ${this.channelName}`));
     this.runOnStreamLoadedCallbacks();
   }
 
