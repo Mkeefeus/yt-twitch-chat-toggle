@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { MessageAction, type MessageRequest, type MessageResponse, type SystemTheme } from '../types';
+import { MessageAction, type Message, type MessageResponse, type SystemTheme } from '../types';
 
 export function useTheme() {
   const [theme, setTheme] = useState<SystemTheme>('system');
@@ -63,7 +63,7 @@ export function useTheme() {
     setTheme(newTheme);
     updateDocumentClass(newTheme);
 
-    const updateRequest: MessageRequest<MessageAction.UPDATE_SETTINGS> = {
+    const updateRequest: Message<MessageAction.UPDATE_SETTINGS> = {
       action: MessageAction.UPDATE_SETTINGS,
       data: { theme: newTheme }
     };

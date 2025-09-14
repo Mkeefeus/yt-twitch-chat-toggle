@@ -1,5 +1,5 @@
 import { formatConsoleMessage } from '../helpers';
-import { MessageAction, type MessageRequest, type MessageResponse } from '../types';
+import { MessageAction, type Message, type MessageResponse } from '../types';
 import { YoutubeTwitchChatStorageWorker } from './storage';
 
 export class YoutubeTwitchChatIPCWorker {
@@ -14,7 +14,7 @@ export class YoutubeTwitchChatIPCWorker {
   private setupMessageListener() {
     chrome.runtime.onMessage.addListener(
       (
-        message: MessageRequest,
+        message: Message,
         sender: chrome.runtime.MessageSender,
         sendResponse: (response?: MessageResponse) => void
       ) => {
@@ -29,7 +29,7 @@ export class YoutubeTwitchChatIPCWorker {
   }
 
   private async handleMessageAsync(
-    message: MessageRequest,
+    message: Message,
     sender: chrome.runtime.MessageSender,
     sendResponse: (response?: MessageResponse) => void
   ) {
@@ -40,21 +40,21 @@ export class YoutubeTwitchChatIPCWorker {
           break;
         case MessageAction.UPDATE_SETTINGS:
           await this.handleUpdateSettings(
-            message as MessageRequest<MessageAction.UPDATE_SETTINGS>,
+            message as Message<MessageAction.UPDATE_SETTINGS>,
             sender,
             sendResponse
           );
           break;
         case MessageAction.GET_CHANNEL_SETTINGS:
           await this.handleGetChannelSettings(
-            message as MessageRequest<MessageAction.GET_CHANNEL_SETTINGS>,
+            message as Message<MessageAction.GET_CHANNEL_SETTINGS>,
             sender,
             sendResponse
           );
           break;
         case MessageAction.UPDATE_CHANNEL_SETTINGS:
           await this.handleUpdateChannelSettings(
-            message as MessageRequest<MessageAction.UPDATE_CHANNEL_SETTINGS>,
+            message as Message<MessageAction.UPDATE_CHANNEL_SETTINGS>,
             sender,
             sendResponse
           );
@@ -91,7 +91,7 @@ export class YoutubeTwitchChatIPCWorker {
   }
 
   private async handleUpdateSettings(
-    message: MessageRequest<MessageAction.UPDATE_SETTINGS>,
+    message: Message<MessageAction.UPDATE_SETTINGS>,
     sender: chrome.runtime.MessageSender,
     sendResponse: (response?: MessageResponse<MessageAction.UPDATE_SETTINGS>) => void
   ) {
@@ -122,7 +122,7 @@ export class YoutubeTwitchChatIPCWorker {
   }
 
   private async handleGetChannelSettings(
-    message: MessageRequest<MessageAction.GET_CHANNEL_SETTINGS>,
+    message: Message<MessageAction.GET_CHANNEL_SETTINGS>,
     sender: chrome.runtime.MessageSender,
     sendResponse: (response?: MessageResponse<MessageAction.GET_CHANNEL_SETTINGS>) => void
   ) {
@@ -156,7 +156,7 @@ export class YoutubeTwitchChatIPCWorker {
   }
 
   private async handleUpdateChannelSettings(
-    message: MessageRequest<MessageAction.UPDATE_CHANNEL_SETTINGS>,
+    message: Message<MessageAction.UPDATE_CHANNEL_SETTINGS>,
     sender: chrome.runtime.MessageSender,
     sendResponse: (response?: MessageResponse<MessageAction.UPDATE_CHANNEL_SETTINGS>) => void
   ) {

@@ -7,7 +7,7 @@ export enum MessageAction {
   THEME_CHANGED = `${prefix}-theme-changed`
 }
 
-export type MessageRequest<T extends MessageAction = MessageAction> = {
+export type Message<T extends MessageAction = MessageAction> = {
   action: T;
   data?: RequestData[T];
 };

@@ -1,7 +1,7 @@
 import { useState } from 'preact/hooks';
 import { getLocaleMessage } from '../helpers';
 import { ToggleSetting } from '../components/ToggleSetting';
-import { MessageAction, type MessageRequest } from '../types';
+import { MessageAction, type Message } from '../types';
 
 const POPUP_TITLE = getLocaleMessage('extension_name');
 const POPUP_DESCRIPTION = getLocaleMessage('extension_description');
@@ -22,7 +22,7 @@ export function Popup({ handleNavigation }: { handleNavigation: (route: string) 
           twitchChannel: channel
         }
       }
-    } as MessageRequest<MessageAction.UPDATE_CHANNEL_SETTINGS>);
+    } as Message<MessageAction.UPDATE_CHANNEL_SETTINGS>);
   };
 
   return (
