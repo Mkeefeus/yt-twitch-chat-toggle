@@ -1,6 +1,5 @@
 # TODO
 
-- Setup destroy methods for workers where needed
 - Add overlay chat prompt
 - Nuke IPC worker, not needed
 - Revisit popup, maybe drop preact? Seems overkill for a basic popup

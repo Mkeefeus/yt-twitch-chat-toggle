@@ -1,12 +1,14 @@
 import type { ChannelSettings } from '../types';
 import type { YoutubeTwitchChatStorageWorker } from './storage';
 import type { YoutubeTwitchChatThemeWorker } from './theme';
+import { YoutubeTwitchChatPromptWorker } from './prompt';
 
 export class YoutubeTwitchChatChatWorker {
-  private youtubeiFrame?: HTMLIFrameElement;
   private channelSettings?: ChannelSettings;
   private storageWorker: YoutubeTwitchChatStorageWorker;
   private themeWorker: YoutubeTwitchChatThemeWorker;
+  private promptWorker: YoutubeTwitchChatPromptWorker;
+  private youtubeiFrame?: HTMLIFrameElement;
   private twitchIframe?: HTMLIFrameElement;
   // Listener references for cleanup
   private storageChangeListener?: (
@@ -27,6 +29,7 @@ export class YoutubeTwitchChatChatWorker {
   ) {
     this.storageWorker = storageWorker;
     this.themeWorker = themeWorker;
+    this.promptWorker = new YoutubeTwitchChatPromptWorker(storageWorker);
     this.init();
   }
 
@@ -45,10 +48,22 @@ export class YoutubeTwitchChatChatWorker {
     }
 
     const settings = await this.storageWorker.getChannelSettings(currentChannel);
-    if (settings) {
-      this.channelSettings = settings;
-      this.updateChatVisibility();
+    if (!settings) {
+      // Show the prompt here
+      const twitchChannel = await this.promptWorker.showPrompt();
+      if (twitchChannel) {
+        this.channelSettings = {
+          twitchChannel,
+          preferredChat: 'youtube'
+        };
+        this.updateChatVisibility();
+      } else {
+        this.channelSettings = undefined;
+      }
+      return;
     }
+    this.channelSettings = settings;
+    this.updateChatVisibility();
   }
 
   private setupEventListeners() {
@@ -77,6 +92,7 @@ export class YoutubeTwitchChatChatWorker {
   }
 
   private findYouTubeChat() {
+    if (this.youtubeiFrame) return;
     const ytIframe = document.getElementById('chatframe') as HTMLIFrameElement;
     if (ytIframe) {
       this.youtubeiFrame = ytIframe;
@@ -127,9 +143,11 @@ export class YoutubeTwitchChatChatWorker {
     return `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=www.youtube.com${theme === 'dark' ? '&darkpopout' : ''}`;
   }
 
-  private createTwitchChat() {
-    if (!this.youtubeiFrame || !this.channelSettings?.twitchChannel || this.twitchIframe) return;
-
+  private getChatContainer(): void {
+    if (!this.youtubeiFrame) {
+      this.findYouTubeChat();
+    }
+    if (!this.youtubeiFrame) return;
     const chatContainer = this.youtubeiFrame.parentElement as HTMLElement | null;
     if (!chatContainer) return;
     this.chatContainer = chatContainer;
@@ -138,6 +156,20 @@ export class YoutubeTwitchChatChatWorker {
     this.chatContainerOriginalPosition = chatContainer.style.position;
     if (getComputedStyle(chatContainer).position === 'static') {
       chatContainer.style.position = 'relative';
+    }
+    this.chatContainer = chatContainer;
+  }
+
+  private createTwitchChat() {
+    if (!this.youtubeiFrame || !this.channelSettings?.twitchChannel || this.twitchIframe) return;
+
+    this.getChatContainer();
+    if (!this.chatContainer) return;
+
+    // Track original inline style to restore later
+    this.chatContainerOriginalPosition = this.chatContainer.style.position;
+    if (getComputedStyle(this.chatContainer).position === 'static') {
+      this.chatContainer.style.position = 'relative';
     }
 
     this.twitchIframe = document.createElement('iframe');
@@ -150,13 +182,9 @@ export class YoutubeTwitchChatChatWorker {
     this.twitchIframe.className = 'ytd-live-chat-frame';
 
     this.twitchIframe.style.transition = 'opacity 0.3s ease-in-out';
-    this.twitchIframe.style.position = 'absolute';
-    this.twitchIframe.style.opacity = '0';
-    this.twitchIframe.style.pointerEvents = 'none';
-    this.twitchIframe.style.position = 'absolute';
-    this.twitchIframe.style.visibility = 'hidden';
+    this.hideiFrame(this.twitchIframe);
 
-    chatContainer.appendChild(this.twitchIframe);
+    this.chatContainer.appendChild(this.twitchIframe);
     this.themeChangeHandler = (theme: 'light' | 'dark') => {
       if (this.twitchIframe && this.channelSettings?.twitchChannel) {
         this.twitchIframe.src = this.getTwitchChatUrl(this.channelSettings.twitchChannel, theme);
@@ -210,6 +238,9 @@ export class YoutubeTwitchChatChatWorker {
       this.chatContainer = null;
       this.chatContainerOriginalPosition = undefined;
     }
+
+    // Destroy prompt worker
+    this.promptWorker.destroy();
 
     // Clear references
     this.youtubeiFrame = undefined;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { useTheme } from '../hooks/useTheme';
-import type { Themes } from '../types';
+import type { SystemTheme } from '../types';
 
 export function ThemeSetting() {
   const { theme, updateTheme, systemTheme } = useTheme();
@@ -41,7 +41,7 @@ export function ThemeSetting() {
     { value: 'system', label: '💻', title: 'Match System' }
   ] as const;
 
-  const handleThemeChange = (newTheme: Themes) => {
+  const handleThemeChange = (newTheme: SystemTheme) => {
     updateTheme(newTheme);
   };
 
@@ -75,7 +75,7 @@ export function ThemeSetting() {
         {themeOptions.map((option) => (
           <button
             key={option.value}
-            onClick={() => handleThemeChange(option.value as Themes)}
+            onClick={() => handleThemeChange(option.value as SystemTheme)}
             title={option.title}
             className={getButtonClasses(option.value)}
           >

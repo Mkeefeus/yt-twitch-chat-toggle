@@ -51,7 +51,7 @@ export class YoutubeTwitchChatThemeWorker {
     console.log(
       formatConsoleMessage('ThemeWorker', `Theme updated to ${this.theme} due to settings change`)
     );
-    // this.runThemeChangeListeners();
+    this.runThemeChangeListeners();
     chrome.runtime.sendMessage({ action: MessageAction.THEME_CHANGED, theme: this.theme });
   };
 
@@ -86,9 +86,7 @@ export class YoutubeTwitchChatThemeWorker {
     this.listeners.push(callback);
   }
 
-  public unregisterThemeChangeListener(
-    callback: (theme: Theme) => Promise<void> | void
-  ) {
+  public unregisterThemeChangeListener(callback: (theme: Theme) => Promise<void> | void) {
     this.listeners = this.listeners.filter((cb) => cb !== callback);
   }
 
@@ -113,6 +111,7 @@ export class YoutubeTwitchChatThemeWorker {
       chrome.storage.onChanged.removeListener(this.storageChangeListener);
       this.storageChangeListener = undefined;
     }
+
     this.listeners = [];
   }
 }
