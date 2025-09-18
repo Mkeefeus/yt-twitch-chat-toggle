@@ -3,10 +3,12 @@ import '../styles/prompt.css';
 
 export class YoutubeTwitchChatPromptWorker {
   private storageWorker: YoutubeTwitchChatStorageWorker;
+  private channelName: string;
   private promptContainer?: HTMLElement;
 
-  constructor(storageWorker: YoutubeTwitchChatStorageWorker) {
+  constructor(storageWorker: YoutubeTwitchChatStorageWorker, channelName: string) {
     this.storageWorker = storageWorker;
+    this.channelName = channelName;
   }
 
   public async showPrompt(): Promise<string | null> {
@@ -26,7 +28,7 @@ export class YoutubeTwitchChatPromptWorker {
 
     // Create overlay that covers the chat area
     const overlay = document.createElement('div');
-    overlay.className = 'yt-twitch-prompt-chat-overlay';
+    overlay.className = `yt-twitch-prompt-chat-overlay`;
 
     // Create prompt container
     const promptContainer = document.createElement('div');
@@ -34,7 +36,7 @@ export class YoutubeTwitchChatPromptWorker {
 
     // Create content
     const title = document.createElement('h3');
-    title.textContent = 'Link Twitch Chat';
+    title.textContent = `Link Twitch Chat: ${this.channelName}`;
     title.className = 'yt-twitch-prompt-title';
 
     const description = document.createElement('p');
@@ -71,9 +73,8 @@ export class YoutubeTwitchChatPromptWorker {
     const handleSave = async () => {
       const twitchChannel = input.value.trim();
       if (twitchChannel) {
-        const currentChannel = await this.storageWorker.getCurrentChannel();
-        if (currentChannel) {
-          await this.storageWorker.updateChannelSettings(currentChannel, {
+        if (this.channelName) {
+          await this.storageWorker.updateChannelSettings(this.channelName, {
             twitchChannel,
             preferredChat: 'youtube'
           });
@@ -84,10 +85,9 @@ export class YoutubeTwitchChatPromptWorker {
     };
 
     const handleKeepYouTube = async () => {
-      const currentChannel = await this.storageWorker.getCurrentChannel();
-      if (currentChannel) {
+      if (this.channelName) {
         // Save settings to indicate user wants to keep YouTube chat and not be prompted again
-        await this.storageWorker.updateChannelSettings(currentChannel, {
+        await this.storageWorker.updateChannelSettings(this.channelName, {
           preferredChat: 'youtube'
         });
       }

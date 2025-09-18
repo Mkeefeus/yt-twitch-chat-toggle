@@ -24,20 +24,17 @@ export class YoutubeTwitchChatThemeWorker {
     this.loadInitialState();
   }
 
-  private async loadInitialState() {
-    const settings = await this.storageWorker.getSettings();
-    if (!settings) {
-      console.error(formatConsoleMessage('ThemeWorker', 'failed to get extension settings'));
-      return;
-    }
-    this.themeSetting = settings.theme;
-    this.setThemeFromSettings();
-    console.log(
-      formatConsoleMessage(
-        'ThemeWorker',
-        `Initialized with theme setting: ${this.themeSetting}, system theme: ${this.systemTheme}, resulting theme: ${this.theme}`
-      )
-    );
+  private setupEventListeners() {
+    this.mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
+    this.mediaQueryList.addEventListener('change', this.reinitialize);
+    this.storageChangeListener = (changes) => {
+      if (!changes.yt_twitch_chat_settings) {
+        return;
+      }
+      console.log(formatConsoleMessage('ThemeWorker', 'Detected settings change in storage'));
+      this.reinitialize();
+    };
+    chrome.storage.onChanged.addListener(this.storageChangeListener);
   }
 
   private reinitialize = async () => {
@@ -55,17 +52,20 @@ export class YoutubeTwitchChatThemeWorker {
     chrome.runtime.sendMessage({ action: MessageAction.THEME_CHANGED, theme: this.theme });
   };
 
-  private setupEventListeners() {
-    this.mediaQueryList = window.matchMedia('(prefers-color-scheme: dark)');
-    this.mediaQueryList.addEventListener('change', this.reinitialize);
-    this.storageChangeListener = (changes) => {
-      if (!changes.yt_twitch_chat_settings) {
-        return;
-      }
-      console.log(formatConsoleMessage('ThemeWorker', 'Detected settings change in storage'));
-      this.reinitialize();
-    };
-    chrome.storage.onChanged.addListener(this.storageChangeListener);
+  private async loadInitialState() {
+    const settings = await this.storageWorker.getSettings();
+    if (!settings) {
+      console.error(formatConsoleMessage('ThemeWorker', 'failed to get extension settings'));
+      return;
+    }
+    this.themeSetting = settings.theme;
+    this.setThemeFromSettings();
+    console.log(
+      formatConsoleMessage(
+        'ThemeWorker',
+        `Initialized with theme setting: ${this.themeSetting}, system theme: ${this.systemTheme}, resulting theme: ${this.theme}`
+      )
+    );
   }
 
   private setThemeFromSettings() {
@@ -81,6 +81,7 @@ export class YoutubeTwitchChatThemeWorker {
       )
     );
   }
+
   public onThemeChange(callback: (theme: Theme) => Promise<void> | void) {
     // when this.theme changes, run callback
     this.listeners.push(callback);

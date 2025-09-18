@@ -5,6 +5,7 @@ export class YoutubeTwitchChatToggleWorker {
   private preferredChat: 'youtube' | 'twitch' = 'youtube';
   private storageWorker: YoutubeTwitchChatStorageWorker;
   private container: HTMLElement;
+  private channelName: string;
   // Listener refs for cleanup
   private storageChangeListener?: (
     changes: { [key: string]: chrome.storage.StorageChange },
@@ -12,9 +13,10 @@ export class YoutubeTwitchChatToggleWorker {
   ) => void;
   private clickHandler?: (ev: Event) => void;
 
-  constructor(storageWorker: YoutubeTwitchChatStorageWorker) {
+  constructor(storageWorker: YoutubeTwitchChatStorageWorker, channelName: string) {
     this.storageWorker = storageWorker;
     this.container = this.createContainer();
+    this.channelName = channelName;
     this.init();
   }
 
@@ -32,7 +34,7 @@ export class YoutubeTwitchChatToggleWorker {
     }
 
     const container = document.createElement('div');
-    container.className = 'yt-chat-toggle-container ytp-button';
+    container.className = `yt-chat-toggle-container ytp-button`;
     container.title = 'Swap chat';
     container.setAttribute('data-title-no-tooltip', 'Swap chat');
     container.setAttribute('aria-label', 'Swap chat');
@@ -49,16 +51,47 @@ export class YoutubeTwitchChatToggleWorker {
     this.setupEventListeners();
   }
 
+  private render() {
+    this.container.innerHTML = `
+      <div class="chat-toggle-wrapper" style="
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      ">
+        <div class="youtube-icon-${this.channelName}" style="
+          position: absolute;
+          transition: all 0.3s ease-in-out;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+          </svg>
+        </div>
+        <div class="twitch-icon-${this.channelName}" style="
+          position: absolute;
+          transition: all 0.3s ease-in-out;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        ">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
+          </svg>
+        </div>
+      </div>
+    `;
+
+    this.updateIcons();
+  }
+
   private async loadInitialState() {
-    const currentChannel = await this.storageWorker.getCurrentChannel();
-    console.log(
-      formatConsoleMessage('ToggleWorker', 'Current channel from storage:'),
-      currentChannel
-    );
-
-    if (!currentChannel) return;
-
-    const settings = await this.storageWorker.getChannelSettings(currentChannel);
+    const settings = await this.storageWorker.getChannelSettings(this.channelName);
     if (!settings?.preferredChat) return;
 
     console.log(formatConsoleMessage('ToggleWorker', 'Loaded settings from storage:'), settings);
@@ -88,13 +121,9 @@ export class YoutubeTwitchChatToggleWorker {
     this.preferredChat = newChat;
     this.updateIcons();
 
-    // Store in chrome storage for other components
-    const currentChannel = await this.storageWorker.getCurrentChannel();
-    if (currentChannel) {
-      await this.storageWorker.updateChannelSettings(currentChannel, {
-        preferredChat: newChat
-      });
-    }
+    await this.storageWorker.updateChannelSettings(this.channelName, {
+      preferredChat: newChat
+    });
 
     // Dispatch custom event for immediate updates
     window.dispatchEvent(
@@ -104,48 +133,13 @@ export class YoutubeTwitchChatToggleWorker {
     );
   }
 
-  private render() {
-    this.container.innerHTML = `
-      <div class="chat-toggle-wrapper" style="
-        position: relative;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-      ">
-        <div class="youtube-icon" style="
-          position: absolute;
-          transition: all 0.3s ease-in-out;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-          </svg>
-        </div>
-        <div class="twitch-icon" style="
-          position: absolute;
-          transition: all 0.3s ease-in-out;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
-          </svg>
-        </div>
-      </div>
-    `;
-
-    this.updateIcons();
-  }
-
   private updateIcons() {
-    const youtubeIcon = this.container.querySelector('.youtube-icon') as HTMLElement;
-    const twitchIcon = this.container.querySelector('.twitch-icon') as HTMLElement;
+    const youtubeIcon = this.container.querySelector(
+      `.youtube-icon-${this.channelName}`
+    ) as HTMLElement;
+    const twitchIcon = this.container.querySelector(
+      `.twitch-icon-${this.channelName}`
+    ) as HTMLElement;
 
     if (youtubeIcon) {
       youtubeIcon.style.opacity = this.preferredChat === 'youtube' ? '1' : '0';

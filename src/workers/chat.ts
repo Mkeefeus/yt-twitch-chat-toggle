@@ -1,9 +1,10 @@
-import type { ChannelSettings } from '../types';
+import type { ChannelSettings, Theme } from '../types';
 import type { YoutubeTwitchChatStorageWorker } from './storage';
 import type { YoutubeTwitchChatThemeWorker } from './theme';
 import { YoutubeTwitchChatPromptWorker } from './prompt';
 
 export class YoutubeTwitchChatChatWorker {
+  private channelName: string;
   private channelSettings?: ChannelSettings;
   private storageWorker: YoutubeTwitchChatStorageWorker;
   private themeWorker: YoutubeTwitchChatThemeWorker;
@@ -18,18 +19,20 @@ export class YoutubeTwitchChatChatWorker {
     areaName: string
   ) => void;
   private chatToggleHandler?: (event: Event) => void;
-  private themeChangeHandler?: (theme: 'light' | 'dark') => void;
+  private themeChangeHandler?: (theme: Theme) => void;
   // DOM tracking for cleanup
   private chatContainer?: HTMLElement | null;
   private chatContainerOriginalPosition?: string;
 
   constructor(
     storageWorker: YoutubeTwitchChatStorageWorker,
-    themeWorker: YoutubeTwitchChatThemeWorker
+    themeWorker: YoutubeTwitchChatThemeWorker,
+    channelName: string
   ) {
     this.storageWorker = storageWorker;
     this.themeWorker = themeWorker;
-    this.promptWorker = new YoutubeTwitchChatPromptWorker(storageWorker);
+    this.channelName = channelName;
+    this.promptWorker = new YoutubeTwitchChatPromptWorker(storageWorker, channelName);
     this.init();
   }
 
@@ -40,14 +43,12 @@ export class YoutubeTwitchChatChatWorker {
   }
 
   private async loadInitialState() {
-    const currentChannel = await this.storageWorker.getCurrentChannel();
-
-    if (!currentChannel) {
+    if (!this.channelName) {
       this.channelSettings = undefined;
       return;
     }
 
-    const settings = await this.storageWorker.getChannelSettings(currentChannel);
+    const settings = await this.storageWorker.getChannelSettings(this.channelName);
     if (!settings) {
       // Show the prompt here
       const twitchChannel = await this.promptWorker.showPrompt();
@@ -64,6 +65,77 @@ export class YoutubeTwitchChatChatWorker {
     }
     this.channelSettings = settings;
     this.updateChatVisibility();
+  }
+
+  private updateChatVisibility() {
+    if (!this.channelSettings || !this.youtubeiFrame) return;
+    const preferredChat = this.channelSettings.preferredChat || 'youtube';
+    const showTwitch = preferredChat === 'twitch';
+
+    if (this.channelSettings.twitchChannel && !this.twitchIframe) {
+      this.createTwitchChat();
+    }
+
+    if (showTwitch) {
+      this.hideiFrame(this.youtubeiFrame);
+
+      if (this.twitchIframe) {
+        this.showiFrame(this.twitchIframe);
+      }
+    } else {
+      this.showiFrame(this.youtubeiFrame);
+
+      if (this.twitchIframe) {
+        this.hideiFrame(this.twitchIframe);
+      }
+    }
+  }
+
+  private createTwitchChat() {
+    if (!this.youtubeiFrame || !this.channelSettings?.twitchChannel || this.twitchIframe) return;
+
+    this.getChatContainer();
+    if (!this.chatContainer) return;
+
+    // Track original inline style to restore later
+    this.chatContainerOriginalPosition = this.chatContainer.style.position;
+    if (getComputedStyle(this.chatContainer).position === 'static') {
+      this.chatContainer.style.position = 'relative';
+    }
+
+    this.twitchIframe = document.createElement('iframe');
+    this.twitchIframe.id = `twitch-chat-iframe-${this.channelName}`;
+    this.twitchIframe.src = this.getTwitchChatUrl(
+      this.channelSettings.twitchChannel,
+      this.themeWorker.theme
+    );
+    this.twitchIframe.setAttribute('allow', 'clipboard-read; clipboard-write');
+    this.twitchIframe.className = 'ytd-live-chat-frame';
+
+    this.twitchIframe.style.transition = 'opacity 0.3s ease-in-out';
+    this.hideiFrame(this.twitchIframe);
+
+    this.chatContainer.appendChild(this.twitchIframe);
+    this.themeChangeHandler = (theme: 'light' | 'dark') => {
+      if (this.twitchIframe && this.channelSettings?.twitchChannel) {
+        this.twitchIframe.src = this.getTwitchChatUrl(this.channelSettings.twitchChannel, theme);
+      }
+    };
+    this.themeWorker.onThemeChange(this.themeChangeHandler);
+  }
+
+  private showiFrame(iframe: HTMLIFrameElement) {
+    iframe.style.opacity = '1';
+    iframe.style.pointerEvents = 'auto';
+    iframe.style.position = 'static';
+    iframe.style.visibility = 'visible';
+  }
+
+  private hideiFrame(iframe: HTMLIFrameElement) {
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    iframe.style.position = 'absolute';
+    iframe.style.visibility = 'hidden';
   }
 
   private setupEventListeners() {
@@ -91,58 +163,6 @@ export class YoutubeTwitchChatChatWorker {
     window.addEventListener('chatToggleChanged', this.chatToggleHandler as EventListener);
   }
 
-  private findYouTubeChat() {
-    if (this.youtubeiFrame) return;
-    const ytIframe = document.getElementById('chatframe') as HTMLIFrameElement;
-    if (ytIframe) {
-      this.youtubeiFrame = ytIframe;
-      this.youtubeiFrame.style.transition = 'opacity 0.3s ease-in-out';
-      this.updateChatVisibility();
-    }
-  }
-
-  private showiFrame(iframe: HTMLIFrameElement) {
-    iframe.style.opacity = '1';
-    iframe.style.pointerEvents = 'auto';
-    iframe.style.position = 'static';
-    iframe.style.visibility = 'visible';
-  }
-
-  private hideiFrame(iframe: HTMLIFrameElement) {
-    iframe.style.opacity = '0';
-    iframe.style.pointerEvents = 'none';
-    iframe.style.position = 'absolute';
-    iframe.style.visibility = 'hidden';
-  }
-
-  private updateChatVisibility() {
-    if (!this.channelSettings || !this.youtubeiFrame) return;
-    const preferredChat = this.channelSettings.preferredChat || 'youtube';
-    const showTwitch = preferredChat === 'twitch';
-
-    if (this.channelSettings.twitchChannel && !this.twitchIframe) {
-      this.createTwitchChat();
-    }
-
-    if (showTwitch) {
-      this.hideiFrame(this.youtubeiFrame);
-
-      if (this.twitchIframe) {
-        this.showiFrame(this.twitchIframe);
-      }
-    } else {
-      this.showiFrame(this.youtubeiFrame);
-
-      if (this.twitchIframe) {
-        this.hideiFrame(this.twitchIframe);
-      }
-    }
-  }
-
-  private getTwitchChatUrl(twitchChannel: string, theme: 'light' | 'dark'): string {
-    return `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=www.youtube.com${theme === 'dark' ? '&darkpopout' : ''}`;
-  }
-
   private getChatContainer(): void {
     if (!this.youtubeiFrame) {
       this.findYouTubeChat();
@@ -160,37 +180,18 @@ export class YoutubeTwitchChatChatWorker {
     this.chatContainer = chatContainer;
   }
 
-  private createTwitchChat() {
-    if (!this.youtubeiFrame || !this.channelSettings?.twitchChannel || this.twitchIframe) return;
+  private getTwitchChatUrl(twitchChannel: string, theme: 'light' | 'dark'): string {
+    return `https://www.twitch.tv/embed/${twitchChannel}/chat?parent=www.youtube.com${theme === 'dark' ? '&darkpopout' : ''}`;
+  }
 
-    this.getChatContainer();
-    if (!this.chatContainer) return;
-
-    // Track original inline style to restore later
-    this.chatContainerOriginalPosition = this.chatContainer.style.position;
-    if (getComputedStyle(this.chatContainer).position === 'static') {
-      this.chatContainer.style.position = 'relative';
+  private findYouTubeChat() {
+    if (this.youtubeiFrame) return;
+    const ytIframe = document.getElementById('chatframe') as HTMLIFrameElement;
+    if (ytIframe) {
+      this.youtubeiFrame = ytIframe;
+      this.youtubeiFrame.style.transition = 'opacity 0.3s ease-in-out';
+      this.updateChatVisibility();
     }
-
-    this.twitchIframe = document.createElement('iframe');
-    this.twitchIframe.id = 'twitch-chat-iframe';
-    this.twitchIframe.src = this.getTwitchChatUrl(
-      this.channelSettings.twitchChannel,
-      this.themeWorker.theme
-    );
-    this.twitchIframe.setAttribute('allow', 'clipboard-read; clipboard-write');
-    this.twitchIframe.className = 'ytd-live-chat-frame';
-
-    this.twitchIframe.style.transition = 'opacity 0.3s ease-in-out';
-    this.hideiFrame(this.twitchIframe);
-
-    this.chatContainer.appendChild(this.twitchIframe);
-    this.themeChangeHandler = (theme: 'light' | 'dark') => {
-      if (this.twitchIframe && this.channelSettings?.twitchChannel) {
-        this.twitchIframe.src = this.getTwitchChatUrl(this.channelSettings.twitchChannel, theme);
-      }
-    };
-    this.themeWorker.onThemeChange(this.themeChangeHandler);
   }
 
   private removeTwitchChat() {

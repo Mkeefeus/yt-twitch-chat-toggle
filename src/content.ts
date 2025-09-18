@@ -8,15 +8,20 @@ import { formatConsoleMessage } from './helpers';
 const initializeContentScript = () => {
   let storageWorker: YoutubeTwitchChatStorageWorker | undefined = undefined;
   let themeWorker: YoutubeTwitchChatThemeWorker | undefined = undefined;
-  let chatWorker: YoutubeTwitchChatChatWorker | undefined = undefined;
   let toggleWorker: YoutubeTwitchChatToggleWorker | undefined = undefined;
+  let chatWorker: YoutubeTwitchChatChatWorker | undefined = undefined;
+  const navigationWorker = new YoutubeTwitchChatNavigationWorker();
+  console.log(
+    formatConsoleMessage('ContentScript', 'Content script initialized: ')
+  );
 
-  const handleStreamLoaded = () => {
+  const handleStreamLoaded: EventListener = () => {
     console.log(formatConsoleMessage('ContentScript', 'Stream loaded, initializing workers'));
+    const channelName = navigationWorker.channelName;
     storageWorker = new YoutubeTwitchChatStorageWorker();
     themeWorker = new YoutubeTwitchChatThemeWorker(storageWorker);
-    toggleWorker = new YoutubeTwitchChatToggleWorker(storageWorker);
-    chatWorker = new YoutubeTwitchChatChatWorker(storageWorker, themeWorker);
+    toggleWorker = new YoutubeTwitchChatToggleWorker(storageWorker, channelName);
+    chatWorker = new YoutubeTwitchChatChatWorker(storageWorker, themeWorker, channelName);
   };
 
   const handleStreamUnloaded = () => {
@@ -31,9 +36,10 @@ const initializeContentScript = () => {
     toggleWorker = undefined;
   };
 
-  const navigationWorker = new YoutubeTwitchChatNavigationWorker();
-  navigationWorker.onStreamLoaded(handleStreamLoaded);
-  navigationWorker.onStreamUnloaded(handleStreamUnloaded);
+  // navigationWorker.onStreamLoaded(handleStreamLoaded);
+  window.addEventListener('yt-twitch-chat-stream-loaded', handleStreamLoaded);
+  // navigationWorker.onStreamUnloaded(handleStreamUnloaded);
+  window.addEventListener('yt-twitch-chat-stream-unloaded', handleStreamUnloaded);
 };
 
 initializeContentScript();
