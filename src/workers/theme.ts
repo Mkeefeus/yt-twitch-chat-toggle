@@ -1,4 +1,4 @@
-import { formatConsoleMessage } from '../helpers';
+import { formatConsoleMessage } from '../utils';
 import { MessageAction, type SystemTheme, type Theme } from '../types';
 import type { YoutubeTwitchChatStorageWorker } from './storage';
 

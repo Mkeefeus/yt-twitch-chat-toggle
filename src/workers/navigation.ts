@@ -1,4 +1,4 @@
-import { formatConsoleMessage } from '../helpers';
+import { formatConsoleMessage } from '../utils';
 
 const INFO_TIMEOUT_MS = 5000;
 

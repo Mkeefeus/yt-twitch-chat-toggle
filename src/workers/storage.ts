@@ -1,4 +1,4 @@
-import { formatConsoleMessage } from '../helpers';
+import { formatConsoleMessage } from '../utils';
 import { type ChannelSettings, type ExtensionSettings } from '../types';
 
 export class YoutubeTwitchChatStorageWorker {

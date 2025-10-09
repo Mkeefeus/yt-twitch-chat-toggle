@@ -1,24 +1,18 @@
 {
   "name": "yt-twitch-chat-toggle",
-  "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "devDependencies": {
+    "@types/chrome": "^0.1.6",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4"
+  },
+  "private": true,
   "scripts": {
     "build:main": "bun run format &&tsc -b && bunx --bun vite build --config vite.config.ts",
     "build:content": "bunx --bun vite build --config vite.config.content.ts",
     "build": "bun run build:main && bun run build:content",
     "format": "bunx --bun prettier --write ."
   },
-  "dependencies": {
-    "@tailwindcss/vite": "^4.1.12",
-    "preact": "^10.27.1",
-    "tailwindcss": "^4.1.12"
-  },
-  "devDependencies": {
-    "@preact/preset-vite": "^2.10.2",
-    "@types/chrome": "^0.1.6",
-    "prettier": "^3.6.2",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.4"
-  }
+  "type": "module"
 }
