@@ -60,9 +60,9 @@ export class YoutubeTwitchChatNavigationWorker {
       window.dispatchEvent(new Event('yt-twitch-chat-stream-unloaded'));
     }
 
-    this.channelName = await this.extractChannelName();
+    const channelName = await this.extractChannelName();
 
-    if (this.channelName === '') {
+    if (channelName === '') {
       console.log(
         formatConsoleMessage(
           'NavigationWorker',
@@ -71,18 +71,19 @@ export class YoutubeTwitchChatNavigationWorker {
       );
       return;
     }
+    this.previousChannelName = channelName;
     const isLive = await this.isLiveStream();
     if (!isLive) {
-      console.log(
-        formatConsoleMessage('NavigationWorker', 'Not a live stream, skipping channel storage')
-      );
+      console.log(formatConsoleMessage('NavigationWorker', 'Not a live stream'));
       return;
     }
-    this.previousChannelName = this.channelName;
+    this.channelName = channelName;
     console.log(
       formatConsoleMessage('NavigationWorker', `Stream loaded for channel: ${this.channelName}`)
     );
-    window.dispatchEvent(new CustomEvent('yt-twitch-chat-stream-loaded', { detail: { channelName: this.channelName } }));
+    window.dispatchEvent(
+      new CustomEvent('yt-twitch-chat-stream-loaded', { detail: { channelName: this.channelName } })
+    );
   };
 
   private async extractChannelName(): Promise<string> {

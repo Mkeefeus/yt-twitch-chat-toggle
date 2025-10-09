@@ -11,9 +11,7 @@ const initializeContentScript = () => {
   let toggleWorker: YoutubeTwitchChatToggleWorker | undefined = undefined;
   let chatWorker: YoutubeTwitchChatChatWorker | undefined = undefined;
   const navigationWorker = new YoutubeTwitchChatNavigationWorker();
-  console.log(
-    formatConsoleMessage('ContentScript', 'Content script initialized: ')
-  );
+  console.log(formatConsoleMessage('ContentScript', 'Content script initialized: '));
 
   const handleStreamLoaded: EventListener = () => {
     console.log(formatConsoleMessage('ContentScript', 'Stream loaded, initializing workers'));

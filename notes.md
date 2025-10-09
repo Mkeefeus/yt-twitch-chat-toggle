@@ -17,3 +17,5 @@
   - That being said, this may not matter because the extension is only active on one tab at a time. Unless you were to change streams on multiple tabs very close together, which could trigger a race condition. Maybe tie current to navigationWorker and make it public?
 - Setup logger worker and debug mode
 - Firefox compatibility
+
+## Bugs
