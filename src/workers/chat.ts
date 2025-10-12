@@ -1,4 +1,4 @@
-import type { ChannelSettings, Theme } from '../types';
+import type { ChannelSettings, ExtensionSettings, Theme } from '../types';
 import type { YoutubeTwitchChatStorageWorker } from './storage';
 import type { YoutubeTwitchChatThemeWorker } from './theme';
 import { YoutubeTwitchChatPromptWorker } from './prompt';
@@ -37,33 +37,18 @@ export class YoutubeTwitchChatChatWorker {
   }
 
   private async init() {
-    await this.loadInitialState();
     this.setupEventListeners();
     this.findYouTubeChat();
-  }
-
-  private async loadInitialState() {
-    if (!this.channelName) {
-      this.channelSettings = undefined;
-      return;
-    }
-
-    const settings = await this.storageWorker.getChannelSettings(this.channelName);
-    if (!settings) {
-      // Show the prompt here
+    this.channelSettings = await this.storageWorker.getChannelSettings(this.channelName);
+    if (!this.channelSettings) {
       const twitchChannel = await this.promptWorker.showPrompt();
       if (twitchChannel) {
         this.channelSettings = {
           twitchChannel,
-          preferredChat: 'youtube'
+          preferredChat: 'twitch'
         };
-        this.updateChatVisibility();
-      } else {
-        this.channelSettings = undefined;
       }
-      return;
     }
-    this.channelSettings = settings;
     this.updateChatVisibility();
   }
 
@@ -144,9 +129,14 @@ export class YoutubeTwitchChatChatWorker {
       changes: { [key: string]: chrome.storage.StorageChange },
       _areaName: string
     ) => {
-      if (changes.current_yt_channel || changes.yt_twitch_chat_settings) {
-        this.loadInitialState();
+      const { newValue, oldValue }: { newValue?: ExtensionSettings; oldValue?: ExtensionSettings } =
+        changes.yt_twitch_chat_settings;
+      if (!newValue || !oldValue) return;
+      if (newValue.channels[this.channelName] === oldValue.channels[this.channelName]) {
+        return;
       }
+      this.channelSettings = newValue.channels[this.channelName];
+      this.updateChatVisibility();
     };
 
     // Listen for toggle events

@@ -14,5 +14,8 @@
     "build": "bun run build:main && bun run build:content",
     "format": "bunx --bun prettier --write ."
   },
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@types/bun": "^1.2.23"
+  }
 }

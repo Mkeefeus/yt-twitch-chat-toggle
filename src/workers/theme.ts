@@ -31,7 +31,13 @@ export class YoutubeTwitchChatThemeWorker {
       if (!changes.yt_twitch_chat_settings) {
         return;
       }
-      console.log(formatConsoleMessage('ThemeWorker', 'Detected settings change in storage'));
+      if (
+        changes.yt_twitch_chat_settings.newValue.theme ===
+        changes.yt_twitch_chat_settings.oldValue.theme
+      ) {
+        return;
+      }
+      console.log(formatConsoleMessage('ThemeWorker', 'Detected theme change in storage'));
       this.reinitialize();
     };
     chrome.storage.onChanged.addListener(this.storageChangeListener);

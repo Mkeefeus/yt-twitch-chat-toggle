@@ -21,14 +21,13 @@
       "js": ["content.js"]
     }
   ],
+  "background": {
+    "service_worker": "serviceworker.js"
+  },
   "web_accessible_resources": [
     {
       "resources": ["prompt.html"],
       "matches": ["https://www.youtube.com/*"]
     }
-  ],
-  "background": {
-    "service_worker": "serviceworker.js",
-    "type": "module"
-  }
+  ]
 }

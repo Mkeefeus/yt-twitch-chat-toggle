@@ -1,5 +1,5 @@
 import { formatConsoleMessage } from '../utils';
-import { type ChannelSettings, type ExtensionSettings } from '../types';
+import type { ChannelSettings, ExtensionSettings } from '../types';
 
 export class YoutubeTwitchChatStorageWorker {
   private STORAGE_KEY: string = 'yt_twitch_chat_settings';
@@ -9,6 +9,7 @@ export class YoutubeTwitchChatStorageWorker {
   }
 
   private async init() {
+    this.setupEventlisteners();
     await this.initializeDefaultSettings();
     console.log(formatConsoleMessage('StorageWorker', 'Storage initialized'));
   }
@@ -63,6 +64,20 @@ export class YoutubeTwitchChatStorageWorker {
         error
       );
     }
+  }
+
+  private setupEventlisteners() {
+    chrome.storage.onChanged.addListener((changes) => {
+      if (
+        changes[this.STORAGE_KEY] &&
+        changes[this.STORAGE_KEY].newValue?.useSync !== changes[this.STORAGE_KEY].oldValue?.useSync
+      ) {
+        console.log(
+          formatConsoleMessage('StorageWorker', 'useSync setting changed, triggering migration')
+        );
+        this.migrateStorage();
+      }
+    });
   }
 
   private async getStorageApi(): Promise<chrome.storage.StorageArea> {
@@ -167,12 +182,7 @@ export class YoutubeTwitchChatStorageWorker {
   }
 
   public async getCurrentChannel(): Promise<string | undefined> {
-    const result = await chrome.storage.local.get('current_yt_channel');
-    return result.current_yt_channel;
-  }
-
-  public async setCurrentChannel(channelId: string): Promise<void> {
-    if (!channelId) return;
-    await chrome.storage.local.set({ current_yt_channel: channelId });
+    const result = await chrome.storage.session.get('current_channel');
+    return result.current_channel;
   }
 }

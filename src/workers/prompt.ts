@@ -76,7 +76,7 @@ export class YoutubeTwitchChatPromptWorker {
         if (this.channelName) {
           await this.storageWorker.updateChannelSettings(this.channelName, {
             twitchChannel,
-            preferredChat: 'youtube'
+            preferredChat: 'twitch'
           });
         }
         this.removePrompt();
