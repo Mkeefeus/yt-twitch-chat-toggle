@@ -13,6 +13,8 @@
 ## Misc
 
 - Setup logger worker and debug mode
+- Implement locales for everything
+- Handle themes in popup
 - Firefox compatibility
 
 ## Bugs

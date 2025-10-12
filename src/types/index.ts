@@ -1,31 +1,19 @@
 const prefix = 'yt-twitch-chat';
 export enum MessageAction {
-  GET_SETTINGS = `${prefix}-get-settings`,
-  UPDATE_SETTINGS = `${prefix}-update-settings`,
-  GET_CHANNEL_SETTINGS = `${prefix}-get-channel-settings`,
-  UPDATE_CHANNEL_SETTINGS = `${prefix}-update-channel-settings`,
-  THEME_CHANGED = `${prefix}-theme-changed`
+  SET_CURRENT_CHANNEL = `${prefix}-set-current-channel`,
 }
 
 export type Message<T extends MessageAction = MessageAction> = {
   action: T;
-  data?: RequestData[T];
+  data?: MessageData[T];
 };
 
-type RequestData = {
-  [MessageAction.GET_SETTINGS]: undefined;
-  [MessageAction.UPDATE_SETTINGS]: Partial<ExtensionSettings>;
-  [MessageAction.GET_CHANNEL_SETTINGS]: { channelId: string };
-  [MessageAction.UPDATE_CHANNEL_SETTINGS]: { channelId: string; data: Partial<ChannelSettings> };
-  [MessageAction.THEME_CHANGED]: { theme: Theme };
+export type MessageData = {
+  [MessageAction.SET_CURRENT_CHANNEL]: { channelName: string };
 };
 
 type ResponseData = {
-  [MessageAction.GET_SETTINGS]: ExtensionSettings | undefined;
-  [MessageAction.UPDATE_SETTINGS]: undefined;
-  [MessageAction.GET_CHANNEL_SETTINGS]: ChannelSettings | undefined;
-  [MessageAction.UPDATE_CHANNEL_SETTINGS]: undefined;
-  [MessageAction.THEME_CHANGED]: undefined;
+  [MessageAction.SET_CURRENT_CHANNEL]: undefined;
 };
 
 export type MessageResponse<T extends MessageAction = MessageAction> = {

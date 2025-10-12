@@ -1,3 +1,4 @@
+import { MessageAction, type Message, type MessageResponse } from '../types';
 import { formatConsoleMessage } from '../utils';
 
 const INFO_TIMEOUT_MS = 5000;
@@ -78,11 +79,25 @@ export class YoutubeTwitchChatNavigationWorker {
       return;
     }
     this.channelName = channelName;
-    // chrome.storage.session.set({ current_channel: this.channelName });
-    chrome.runtime.sendMessage({
-      action: 'set_current_channel',
-      data: { current_channel: this.channelName }
-    });
+    const message: Message<MessageAction.SET_CURRENT_CHANNEL> = {
+      action: MessageAction.SET_CURRENT_CHANNEL,
+      data: { channelName: this.channelName }
+    };
+
+    const response = await chrome.runtime.sendMessage<
+      Message<MessageAction.SET_CURRENT_CHANNEL>,
+      MessageResponse<MessageAction.SET_CURRENT_CHANNEL>
+    >(message);
+
+    if (!response || !response.success) {
+      console.error(
+        formatConsoleMessage(
+          'NavigationWorker',
+          'Failed to set current channel in background script'
+        )
+      );
+      return;
+    }
     console.log(
       formatConsoleMessage('NavigationWorker', `Stream loaded for channel: ${this.channelName}`)
     );
