@@ -4,8 +4,8 @@
   "name": "__MSG_extension_name__",
   "version": "1.0.0",
   "description": "__MSG_extension_description__",
-  "permissions": ["scripting", "activeTab", "storage", "tabs"],
-  "host_permissions": ["https://www.youtube.com/*", "https://www.twitch.tv/*"],
+  "permissions": ["storage"],
+  "host_permissions": ["https://www.youtube.com/*"],
   "default_locale": "en_US",
   "action": {
     "default_popup": "popup.html",

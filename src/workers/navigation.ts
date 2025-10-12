@@ -78,7 +78,11 @@ export class YoutubeTwitchChatNavigationWorker {
       return;
     }
     this.channelName = channelName;
-    chrome.storage.session.set({ current_channel: this.channelName });
+    // chrome.storage.session.set({ current_channel: this.channelName });
+    chrome.runtime.sendMessage({
+      action: 'set_current_channel',
+      data: { current_channel: this.channelName }
+    });
     console.log(
       formatConsoleMessage('NavigationWorker', `Stream loaded for channel: ${this.channelName}`)
     );

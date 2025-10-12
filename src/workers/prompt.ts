@@ -49,10 +49,23 @@ export class YoutubeTwitchChatPromptWorker {
     linkEmoji.textContent = '🔗';
     linkEmoji.className = 'yt-twitch-prompt-emoji';
 
+    // Create input container with autodetect button
+    const inputContainer = document.createElement('div');
+    inputContainer.className = 'yt-twitch-prompt-input-container';
+
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = 'Twitch channel name';
     input.className = 'yt-twitch-prompt-input';
+
+    const autodetectButton = document.createElement('button');
+    autodetectButton.textContent = '🎯';
+    autodetectButton.className = 'yt-twitch-prompt-button yt-twitch-prompt-button--autodetect';
+    autodetectButton.title = 'Use current channel name';
+    autodetectButton.type = 'button';
+
+    inputContainer.appendChild(input);
+    inputContainer.appendChild(autodetectButton);
 
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'yt-twitch-prompt-button-container';
@@ -101,6 +114,12 @@ export class YoutubeTwitchChatPromptWorker {
     };
 
     // Add event listeners
+    autodetectButton.addEventListener('click', () => {
+      input.value = this.channelName;
+      input.dispatchEvent(new Event('input')); // Trigger input event to enable save button
+      input.focus();
+    });
+
     saveButton.addEventListener('click', handleSave);
     keepYouTubeButton.addEventListener('click', handleKeepYouTube);
     cancelButton.addEventListener('click', handleCancel);
@@ -134,7 +153,7 @@ export class YoutubeTwitchChatPromptWorker {
     promptContainer.appendChild(title);
     promptContainer.appendChild(linkEmoji);
     promptContainer.appendChild(description);
-    promptContainer.appendChild(input);
+    promptContainer.appendChild(inputContainer);
     promptContainer.appendChild(buttonContainer);
 
     overlay.appendChild(promptContainer);

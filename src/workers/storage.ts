@@ -182,7 +182,33 @@ export class YoutubeTwitchChatStorageWorker {
   }
 
   public async getCurrentChannel(): Promise<string | undefined> {
-    const result = await chrome.storage.session.get('current_channel');
-    return result.current_channel;
+    try {
+      // Check if we're in a content script context where chrome.tabs is not available
+      if (!chrome.tabs) {
+        console.warn(
+          formatConsoleMessage(
+            'StorageWorker',
+            'getCurrentChannel can not be called from content script. Access current channel from navigation worker instead.'
+          )
+        );
+        return;
+      }
+    } catch (error) {
+      console.warn(formatConsoleMessage('StorageWorker', 'Unable to access chrome.tabs API'));
+      return;
+    }
+    const currentTab = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (!currentTab || currentTab.length === 0) {
+      console.warn(formatConsoleMessage('StorageWorker', 'No active tab found'));
+      return;
+    }
+    if (!currentTab[0].id) {
+      console.warn(formatConsoleMessage('StorageWorker', 'Active tab has no ID'));
+      return;
+    }
+    const tabId = currentTab[0].id;
+    const result = await chrome.storage.session.get('current_channels');
+    const currentChannels = result?.current_channels || {};
+    return currentChannels[tabId];
   }
 }
