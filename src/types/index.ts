@@ -1,6 +1,6 @@
 const prefix = 'yt-twitch-chat';
 export enum MessageAction {
-  SET_CURRENT_CHANNEL = `${prefix}-set-current-channel`,
+  SET_CURRENT_CHANNEL = `${prefix}-set-current-channel`
 }
 
 export type Message<T extends MessageAction = MessageAction> = {

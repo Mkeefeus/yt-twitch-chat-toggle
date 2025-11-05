@@ -13,6 +13,6 @@ export default defineConfig({
       }
     },
     emptyOutDir: false,
-    outDir: 'dist'
+    outDir: 'dist/chrome'
   }
 });

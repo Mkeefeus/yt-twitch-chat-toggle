@@ -11,10 +11,14 @@
   },
   "private": true,
   "scripts": {
-    "build:main": "bun run format &&tsc -b && bunx --bun vite build --config vite.config.ts",
-    "build:content": "bunx --bun vite build --config vite.config.content.ts",
-    "build": "bun run build:main && bun run build:content",
-    "format": "bunx --bun prettier --write ."
+    "build:chrome": "bunx --bun vite build --config vite.config.chrome.ts && bunx --bun vite build --config vite.config.content.chrome.ts && bun run manifest:chrome",
+    "build:firefox": "bunx --bun vite build --config vite.config.firefox.ts && bunx --bun vite build --config vite.config.content.firefox.ts && bun run manifest:firefox",
+    "manifest:firefox": "bun run scripts/generate-manifest firefox",
+    "manifest:chrome": "bun run scripts/generate-manifest chrome",
+    "manifest": "bun run scripts/generate-manifest",
+    "type-check": "tsc -b",
+    "format": "bunx --bun prettier --write .",
+    "build": "bun run type-check && bun run format && bun run build:chrome && bun run build:firefox && bun run manifest"
   },
   "type": "module"
 }

@@ -1,5 +1,5 @@
 import { formatConsoleMessage } from '../utils';
-import { MessageAction, type SystemTheme, type Theme } from '../types';
+import { type SystemTheme, type Theme } from '../types';
 import type { YoutubeTwitchChatStorageWorker } from './storage';
 
 export class YoutubeTwitchChatThemeWorker {
@@ -55,7 +55,6 @@ export class YoutubeTwitchChatThemeWorker {
       formatConsoleMessage('ThemeWorker', `Theme updated to ${this.theme} due to settings change`)
     );
     this.runThemeChangeListeners();
-    chrome.runtime.sendMessage({ action: MessageAction.THEME_CHANGED, theme: this.theme });
   };
 
   private async loadInitialState() {

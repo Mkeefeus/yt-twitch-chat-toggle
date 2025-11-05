@@ -6,7 +6,7 @@ function isValidMessage(message: any): message is Message {
     typeof message === 'object' &&
     'action' in message &&
     'data' in message &&
-    MessageAction[message.action as keyof typeof MessageAction] !== undefined
+    Object.values(MessageAction).includes(message.action)
   );
 }
 
@@ -28,7 +28,10 @@ function isValidMessageWithData<T extends MessageAction>(
 }
 
 /* track streams per tab for popup */
-async function setCurrentChannel(message: Message<MessageAction.SET_CURRENT_CHANNEL>, sender: chrome.runtime.MessageSender): Promise<boolean> {
+async function setCurrentChannel(
+  message: Message<MessageAction.SET_CURRENT_CHANNEL>,
+  sender: chrome.runtime.MessageSender
+): Promise<boolean> {
   if (!isValidMessageWithData(message, MessageAction.SET_CURRENT_CHANNEL)) {
     console.warn('Invalid message data for SET_CURRENT_CHANNEL');
     return false;
@@ -53,7 +56,12 @@ async function setCurrentChannel(message: Message<MessageAction.SET_CURRENT_CHAN
     });
     return true;
   } catch (e) {
-    console.error('Error setting current channel for tab ', sender.tab.id, message.data.channelName, e);
+    console.error(
+      'Error setting current channel for tab ',
+      sender.tab.id,
+      message.data.channelName,
+      e
+    );
     return false;
   }
 }

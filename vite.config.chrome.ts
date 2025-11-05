@@ -16,7 +16,7 @@ export default defineConfig({
         assetFileNames: '[name].[ext]'
       }
     },
-    outDir: resolve(__dirname, 'dist'),
+    outDir: resolve(__dirname, 'dist/chrome'),
     emptyOutDir: true
   }
 });
