@@ -1,5 +1,6 @@
 import { formatConsoleMessage } from '../utils';
 import type { ChannelSettings, ExtensionSettings } from '../types';
+import { EXTENSION_PREFIX } from '../constants';
 
 export class YoutubeTwitchChatStorageWorker {
   private STORAGE_KEY: string = 'yt_twitch_chat_settings';
@@ -99,7 +100,7 @@ export class YoutubeTwitchChatStorageWorker {
       }
     } catch (error) {
       console.error(
-        formatConsoleMessage('StorageWorker', 'yt-twitch-chat: Error getting storage API:')
+        formatConsoleMessage('StorageWorker', `${EXTENSION_PREFIX}: Error getting storage API:`)
       );
       return chrome.storage.local;
     }

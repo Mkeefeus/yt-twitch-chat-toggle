@@ -1,0 +1,37 @@
+.yt-twitch-chat-toggle-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.yt-twitch-chat-site-icon {
+  position: absolute;
+  transition: all 0.3s ease-in-out;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: var(--yt-frosted-glass-backdrop-filter-override, blur(16px));
+  background: var(--yt-spec-overlay-background-medium-light, rgba(0, 0, 0, 0.3));
+  border-radius: 50%;
+  text-shadow: 0 0 2px #000;
+  margin-top: 8px;
+  padding: 0;
+  ::after {
+    background: transparent;
+  }
+}
+
+.yt-twitch-chat-site-icon:hover {
+  opacity: 1;
+  ::after {
+    background-color: var(--yt-spec-overlay-button-secondary, rgba(255, 255, 255, 0.1));
+    transition: background-color 0.2s cubic-bezier(0.05, 0, 0, 1);
+    inset: 4px;
+    /* background: transparent; */
+    border-radius: 27px;
+  }
+}

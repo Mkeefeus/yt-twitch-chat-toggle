@@ -1,3 +1,4 @@
+import { EXTENSION_PREFIX } from '../constants';
 import { MessageAction, type Message, type MessageResponse } from '../types';
 import { formatConsoleMessage } from '../utils';
 
@@ -58,7 +59,7 @@ export class YoutubeTwitchChatNavigationWorker {
           `Stream unloaded for channel: ${this.previousChannelName}`
         )
       );
-      window.dispatchEvent(new Event('yt-twitch-chat-stream-unloaded'));
+      window.dispatchEvent(new Event(`${EXTENSION_PREFIX}-stream-unloaded`));
     }
 
     const channelName = await this.extractChannelName();
@@ -102,7 +103,9 @@ export class YoutubeTwitchChatNavigationWorker {
       formatConsoleMessage('NavigationWorker', `Stream loaded for channel: ${this.channelName}`)
     );
     window.dispatchEvent(
-      new CustomEvent('yt-twitch-chat-stream-loaded', { detail: { channelName: this.channelName } })
+      new CustomEvent(`${EXTENSION_PREFIX}-stream-loaded`, {
+        detail: { channelName: this.channelName }
+      })
     );
   };
 
@@ -173,7 +176,10 @@ export class YoutubeTwitchChatNavigationWorker {
         channelName = decodeURIComponent(channelName);
         channelName = channelName.split('?')[0].split('#')[0];
         console.log(
-          formatConsoleMessage('NavigationWorker', 'yt-twitch-chat: Final cleaned channel name:'),
+          formatConsoleMessage(
+            'NavigationWorker',
+            `{${EXTENSION_PREFIX}}: Final cleaned channel name:`
+          ),
           channelName
         );
         resolve(channelName);

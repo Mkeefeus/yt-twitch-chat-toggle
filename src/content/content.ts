@@ -4,6 +4,7 @@ import { YoutubeTwitchChatChatWorker } from '../workers/chat';
 import { YoutubeTwitchChatStorageWorker } from '../workers/storage';
 import { YoutubeTwitchChatThemeWorker } from '../workers/theme';
 import { formatConsoleMessage } from '../utils';
+import { EXTENSION_PREFIX } from '../constants';
 
 let storageWorker: YoutubeTwitchChatStorageWorker | undefined = undefined;
 let themeWorker: YoutubeTwitchChatThemeWorker | undefined = undefined;
@@ -34,6 +35,6 @@ const handleStreamUnloaded = () => {
 };
 
 // navigationWorker.onStreamLoaded(handleStreamLoaded);
-window.addEventListener('yt-twitch-chat-stream-loaded', handleStreamLoaded);
+window.addEventListener(`${EXTENSION_PREFIX}-stream-loaded`, handleStreamLoaded);
 // navigationWorker.onStreamUnloaded(handleStreamUnloaded);
-window.addEventListener('yt-twitch-chat-stream-unloaded', handleStreamUnloaded);
+window.addEventListener(`${EXTENSION_PREFIX}-stream-unloaded`, handleStreamUnloaded);
