@@ -11,8 +11,7 @@ export class YoutubeTwitchChatChatWorker {
   private promptWorker: YoutubeTwitchChatPromptWorker;
   private youtubeiFrame?: HTMLIFrameElement;
   private twitchIframe?: HTMLIFrameElement;
-  private closeButtonOverlay?: HTMLButtonElement;
-  private originalCloseButton?: HTMLElement;
+  private twitchCloseButton?: HTMLButtonElement;
   // Listener references for cleanup
   private storageChangeListener?: (
     changes: {
@@ -22,7 +21,6 @@ export class YoutubeTwitchChatChatWorker {
   ) => void;
   private chatToggleHandler?: (event: Event) => void;
   private themeChangeHandler?: (theme: Theme) => void;
-  private closeButtonClickHandler?: (event: Event) => void;
   // DOM tracking for cleanup
   private chatContainer?: HTMLElement | null;
   private chatContainerOriginalPosition?: string;
@@ -70,93 +68,12 @@ export class YoutubeTwitchChatChatWorker {
       if (this.twitchIframe) {
         this.showiFrame(this.twitchIframe);
       }
-
-      this.setupCloseButtonOverlay();
     } else {
       this.showiFrame(this.youtubeiFrame);
 
       if (this.twitchIframe) {
         this.hideiFrame(this.twitchIframe);
       }
-
-      this.removeCloseButtonOverlay();
-    }
-  }
-
-  private setupCloseButtonOverlay() {
-    if (this.closeButtonOverlay) return;
-
-    // Find the YouTube close button
-    this.originalCloseButton = document.querySelector('#close-button') as HTMLElement;
-    if (!this.originalCloseButton) {
-      console.warn('YouTube Twitch Chat: Close button not found.');
-      return;
-    }
-
-    // Create overlay button
-    this.closeButtonOverlay = document.createElement('button');
-    this.closeButtonOverlay.id = 'twitch-chat-close-overlay';
-    this.closeButtonOverlay.title = 'Close Chat';
-    this.closeButtonOverlay.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      z-index: 10000;
-      padding: 0;
-      margin: 0;
-    `;
-
-    // Handle click to close chat (hide Twitch iframe)
-    this.closeButtonClickHandler = (event: Event) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      // Hide the Twitch chat
-      if (this.twitchIframe) {
-        this.hideiFrame(this.twitchIframe);
-      }
-
-      // Remove the overlay so YouTube's close button works normally
-      this.removeCloseButtonOverlay();
-
-      // Click the actual YouTube close button to close the chat panel
-      if (this.originalCloseButton) {
-        this.originalCloseButton.click();
-      }
-    };
-
-    this.closeButtonOverlay.addEventListener('click', this.closeButtonClickHandler);
-
-    // Position the original button relatively to contain the overlay
-    const originalPosition = getComputedStyle(this.originalCloseButton).position;
-    if (originalPosition === 'static') {
-      this.originalCloseButton.style.position = 'relative';
-    }
-
-    this.originalCloseButton.appendChild(this.closeButtonOverlay);
-  }
-
-  private removeCloseButtonOverlay() {
-    if (this.closeButtonOverlay) {
-      if (this.closeButtonClickHandler) {
-        this.closeButtonOverlay.removeEventListener('click', this.closeButtonClickHandler);
-        this.closeButtonClickHandler = undefined;
-      }
-      this.closeButtonOverlay.remove();
-      this.closeButtonOverlay = undefined;
-    }
-
-    if (this.originalCloseButton) {
-      // Reset position if we changed it
-      if (this.originalCloseButton.style.position === 'relative') {
-        this.originalCloseButton.style.position = '';
-      }
-      this.originalCloseButton = undefined;
     }
   }
 
@@ -185,6 +102,10 @@ export class YoutubeTwitchChatChatWorker {
     this.hideiFrame(this.twitchIframe);
 
     this.chatContainer.appendChild(this.twitchIframe);
+
+    // Create close button overlay
+    this.createTwitchCloseButton();
+
     this.themeChangeHandler = (theme: 'light' | 'dark') => {
       if (this.twitchIframe && this.channelSettings?.twitchChannel) {
         this.twitchIframe.src = this.getTwitchChatUrl(this.channelSettings.twitchChannel, theme);
@@ -193,11 +114,65 @@ export class YoutubeTwitchChatChatWorker {
     this.themeWorker.onThemeChange(this.themeChangeHandler);
   }
 
+  private createTwitchCloseButton() {
+    if (!this.chatContainer || this.twitchCloseButton) return;
+
+    this.twitchCloseButton = document.createElement('button');
+    this.twitchCloseButton.innerHTML = `
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M8.5 10L4 5.5 5.5 4 10 8.5 14.5 4 16 5.5 11.5 10l4.5 4.5-1.5 1.5-4.5-4.5L5.5 16 4 14.5 8.5 10z"/>
+      </svg>
+    `;
+    this.twitchCloseButton.title = 'Close Twitch Chat';
+    this.twitchCloseButton.style.cssText = `
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 1000;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      padding: 6px;
+      cursor: pointer;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      opacity: 0;
+      pointer-events: none;
+    `;
+
+    this.twitchCloseButton.addEventListener('mouseenter', () => {
+      if (this.twitchCloseButton) {
+        this.twitchCloseButton.style.background = 'transparent';
+      }
+    });
+
+    this.twitchCloseButton.addEventListener('mouseleave', () => {
+      if (this.twitchCloseButton) {
+        this.twitchCloseButton.style.background = 'transparent';
+      }
+    });
+
+    this.twitchCloseButton.addEventListener('click', () => {
+      console.log('Twitch chat close button clicked');
+    });
+
+    this.chatContainer.appendChild(this.twitchCloseButton);
+  }
+
   private showiFrame(iframe: HTMLIFrameElement) {
     iframe.style.opacity = '1';
     iframe.style.pointerEvents = 'auto';
     iframe.style.position = 'static';
     iframe.style.visibility = 'visible';
+
+    // Show close button when Twitch iframe is shown
+    if (iframe === this.twitchIframe && this.twitchCloseButton) {
+      this.twitchCloseButton.style.opacity = '1';
+      this.twitchCloseButton.style.pointerEvents = 'auto';
+    }
   }
 
   private hideiFrame(iframe: HTMLIFrameElement) {
@@ -205,6 +180,12 @@ export class YoutubeTwitchChatChatWorker {
     iframe.style.pointerEvents = 'none';
     iframe.style.position = 'absolute';
     iframe.style.visibility = 'hidden';
+
+    // Hide close button when Twitch iframe is hidden
+    if (iframe === this.twitchIframe && this.twitchCloseButton) {
+      this.twitchCloseButton.style.opacity = '0';
+      this.twitchCloseButton.style.pointerEvents = 'none';
+    }
   }
 
   private setupEventListeners() {
@@ -273,6 +254,10 @@ export class YoutubeTwitchChatChatWorker {
       this.twitchIframe.remove();
       this.twitchIframe = undefined;
     }
+    if (this.twitchCloseButton) {
+      this.twitchCloseButton.remove();
+      this.twitchCloseButton = undefined;
+    }
   }
 
   public destroy() {
@@ -293,10 +278,7 @@ export class YoutubeTwitchChatChatWorker {
       this.themeChangeHandler = undefined;
     }
 
-    // Remove close button overlay
-    this.removeCloseButtonOverlay();
-
-    // Remove Twitch chat iframe
+    // Remove Twitch chat iframe and close button
     this.removeTwitchChat();
 
     // Restore YouTube chat iframe visibility/styles

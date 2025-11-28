@@ -2,6 +2,7 @@
 
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import packageJson from '../package.json';
 
 interface ManifestV3 {
   $schema?: string;
@@ -45,6 +46,10 @@ interface ManifestV3 {
     gecko: {
       id: string;
       strict_min_version: string;
+      data_collection_permissions?: {
+        required: string[];
+        optional?: string[];
+      };
     };
   };
 }
@@ -52,7 +57,7 @@ interface ManifestV3 {
 const baseManifest = {
   manifest_version: 3 as const,
   name: '__MSG_extension_name__',
-  version: '1.0.0',
+  version: packageJson.version,
   description: '__MSG_extension_description__',
   permissions: ['storage', 'tabs'],
   host_permissions: ['https://www.youtube.com/*'],
@@ -98,7 +103,10 @@ function generateFirefoxManifest(): ManifestV3 {
     browser_specific_settings: {
       gecko: {
         id: 'yt-twitch-chat-toggle@mkeefeus.github.io',
-        strict_min_version: '128.0'
+        strict_min_version: '128.0',
+        data_collection_permissions: {
+          required: ['none']
+        }
       }
     }
   };
